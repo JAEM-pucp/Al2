@@ -10,8 +10,8 @@ import java.util.Random;
 //45 30 almacén
 public class LNS {
 
-    public Solution Solve(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount){
-        Solution solution = this.ConstructInitialSolution(requests,depot,carAmount,motorcycleAmount);
+    public Solution Solve(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount, Environment environment){
+        Solution solution = this.ConstructInitialSolution(requests,depot,carAmount,motorcycleAmount,environment);
         Solution newSolution = new Solution();
         int iterations = 0;
         ArrayList<Request> unrouted;
@@ -25,44 +25,15 @@ public class LNS {
         return solution;
     }
 
-    public Solution ConstructInitialSolution(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount){
+    public Solution ConstructInitialSolution(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount, Environment environment){
         Solution solution = new Solution();
         Route route;
         int count = 0;
-        int depotX;
-        int depotY;
         //debería pasarse como parámetro
-        Environment environment = new Environment(70,50,45,30);
+        //Environment environment = new Environment(70,50,45,30);
         while (requests.size() > count){
             route = new Route();
-            depotX = depot.x;
-            depotY = depot.y;
-            if (requests.get(count).destination.x>depotX){
-                for (; depotX <= requests.get(count).destination.x; depotX++){
-                    route.nodes.add(environment.getNode(depotX,depotY));
-                }
-            }
-            else if (requests.get(count).destination.x<depotX){
-                for (; depotX <= requests.get(count).destination.x; depotX--){
-                    route.nodes.add(environment.getNode(depotX,depotY));
-                }
-            }
-            else{
-                route.nodes.add(environment.getNode(depotX,depotY));
-            }
-
-            if (requests.get(count).destination.y>depotY){
-                depotY++;
-                for (; depotY <= requests.get(count).destination.y; depotY++){
-                    route.nodes.add(environment.getNode(depotX,depotY));
-                }
-            }
-            else if (requests.get(count).destination.y<depotY){
-                depotY--;
-                for (; depotY <= requests.get(count).destination.y; depotY--){
-                    route.nodes.add(environment.getNode(depotX,depotY));
-                }
-            }
+            route.nodes = this.CalculateRoute(depot,requests.get(count).destination,environment);
             route.requests.add(requests.get(count));
             requests.get(count).isActive=true;
             count++;
@@ -109,5 +80,38 @@ public class LNS {
 
         }
         return solution;
+    }
+
+    public ArrayList<Node> CalculateRoute(Node origin, Node destination, Environment environment){
+        ArrayList<Node> route = new ArrayList<>();
+        int originX = origin.x;
+        int originY = origin.y;
+        if (destination.x>originX){
+            for (; originX <= destination.x; originX++){
+                route.add(environment.getNode(originX,originY));
+            }
+        }
+        else if (destination.x<originX){
+            for (; originX <= destination.x; originX--){
+                route.add(environment.getNode(originX,originY));
+            }
+        }
+        else{
+            route.add(environment.getNode(originX,originY));
+        }
+
+        if (destination.y>originY){
+            originY++;
+            for (; originY <= destination.y; originY++){
+                route.add(environment.getNode(originX,originY));
+            }
+        }
+        else if (destination.y<originY){
+            originY--;
+            for (; originY <= destination.y; originY--){
+                route.add(environment.getNode(originX,originY));
+            }
+        }
+        return route;
     }
 }

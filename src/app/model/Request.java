@@ -11,6 +11,7 @@ public class Request {
     public ArrayList<LocalDateTime> destinationTimeWindow;
     public boolean isActive;
     public int insertionCost;
+    public char vehicle;
 
     public Request(){
         this.origin = new Node();
