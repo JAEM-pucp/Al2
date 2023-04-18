@@ -5,14 +5,16 @@ public class Node {
     public int y;
     public boolean isDepot;
     public boolean isBlocked;
+    public boolean isRequest;
 
     public Node() {
     }
-    public Node(int x, int y, boolean isDepot, boolean isBlocked) {
+    public Node(int x, int y, boolean isDepot, boolean isBlocked, boolean isRequest) {
         this.x = x;
         this.y = y;
         this.isDepot = isDepot;
         this.isBlocked = isBlocked;
+        this.isRequest = isRequest;
     }
 
     public int CalculateCost(Node node){

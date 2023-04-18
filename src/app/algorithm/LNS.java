@@ -31,9 +31,22 @@ public class LNS {
         int count = 0;
         //debería pasarse como parámetro
         //Environment environment = new Environment(70,50,45,30);
+        //por el momento solo acepta numero de pedidos iniciales igual a la flota
         while (requests.size() > count){
             route = new Route();
+            if(environment.carInUse<environment.carTotal){
+                route.vehicle = 'c';
+                environment.carInUse++;
+            } else if (environment.bikeInUse<environment.bikeTotal) {
+                route.vehicle = 'b';
+                environment.bikeInUse++;
+            }
+            else{
+                break;
+            }
             route.nodes = this.CalculateRoute(depot,requests.get(count).destination,environment);
+            route.nodes.remove(route.nodes.size()-1);
+            route.nodes.addAll(this.CalculateRoute(requests.get(count).destination, depot,environment));
             route.requests.add(requests.get(count));
             requests.get(count).isActive=true;
             count++;
@@ -113,5 +126,39 @@ public class LNS {
             }
         }
         return route;
+    }
+
+    public boolean InsertRequest(Node previousRequestNode, Route route, Request request, Environment environment){
+        //se debe copiar la ruta para descartar los cambios si no se puede insertar
+        boolean inserted = false;
+        int count =0;
+        int y;
+        int x;
+        int size;
+        ArrayList<Node> trip = new ArrayList<>();
+        Node nextRequestNode = new Node();
+        while(count<route.nodes.size()){
+            x = route.nodes.get(count).x;
+            y = route.nodes.get(count).y;
+            if(x==previousRequestNode.x && y==previousRequestNode.y){
+                break;
+            }
+            count++;
+        }
+        route.nodes.remove(count);
+        while(count<route.nodes.size()){
+            nextRequestNode = route.nodes.get(count);
+            route.nodes.remove(count);
+            if(nextRequestNode.isDepot || nextRequestNode.isRequest){
+                break;
+            }
+        }
+        trip = CalculateRoute(previousRequestNode,request.destination,environment);
+        size = trip.size();
+        trip.remove(size-1);
+        route.nodes.addAll(count,trip);
+        trip = CalculateRoute(request.destination,nextRequestNode,environment);
+        route.nodes.addAll(count+size-1,trip);
+        return inserted;
     }
 }

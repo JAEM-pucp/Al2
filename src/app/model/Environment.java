@@ -14,6 +14,7 @@ public class Environment {
     public int bikeAvailable;
     public int bikeInUse;
     public int bikeSpeed;
+    public Node depot;
     public Environment(){
 
     }
@@ -26,9 +27,10 @@ public class Environment {
         this.vertex = new ArrayList<>();
         for (int y = 0; y <= height; y++){
             for (int x = 0; x <= width; x++){
-                node = new Node(x,y,false,false);
-                if(depotX==x & depotY==y){
+                node = new Node(x,y,false,false,false);
+                if(depotX==x && depotY==y){
                     node.isDepot=true;
+                    this.depot = node;
                 }
                 this.vertex.add(node);
                 //   0,0 1,0 2,0 0,1 1,1 2,1
