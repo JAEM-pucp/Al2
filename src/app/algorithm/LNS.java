@@ -141,7 +141,6 @@ public class LNS {
         ArrayList<Node> newNodes;
         ArrayList<Node> bestNodes= new ArrayList<>();
         int bestInsertionCost=999;
-        int insertionCost=999;
         int requestIndex=0;
         int bestRequestIndex=0;
 
@@ -158,18 +157,15 @@ public class LNS {
         //I'm at depot (the load can increase freely until it hits capacity)
         //check every mayor node except the return to depot, that'll be a new route
         for(int i=0;i<newRoute.stops.size()-1;i++){
-            if(newRoute.nodes.get(i).isRequest){
-                requestIndex++;
-            }
             newNodes = InsertNode(newRequest,newRoute,i,environment);
-            if(insertionCost<bestInsertionCost){
-                bestInsertionCost=insertionCost;
+            if(newRequest.insertionCost<bestInsertionCost){
+                bestInsertionCost=newRequest.insertionCost;
                 bestNodes=newNodes;
-                bestRequestIndex=requestIndex;
+                bestRequestIndex=i;
             }
         }
         newRoute.nodes=bestNodes;
-        newRoute.requests.add(bestRequestIndex,newRequest);
+        newRoute.stops.add(bestRequestIndex+1,newRequest.destination);
 
         return newRoute;
 
