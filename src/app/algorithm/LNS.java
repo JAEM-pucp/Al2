@@ -19,7 +19,7 @@ public class LNS {
             //needs proper copy function
             //newSolution = solution;
             unrouted = this.Destroy(newSolution);
-            this.Repair(newSolution,unrouted);
+            this.Repair(newSolution,unrouted,environment);
             iterations++;
         }
         return solution;
@@ -72,26 +72,30 @@ public class LNS {
         return unrouted;
     }
 
-    public Solution Repair(Solution solution, ArrayList<Request> unrouted){
-        int chosenRoute;
+    public Solution Repair(Solution solution, ArrayList<Request> unrouted, Environment environment){
+        int chosenRequest = 0;
+        int bestInsertionCost;
         int insertionCost;
         int insertLocation;
-        for(int i=0;i<unrouted.size();i++){
-            for(int j=0;j<solution.routes.size();j++){
-                //cuando se arregle que la ruta vuelva al almacén probablemente se debe poner k+1<solution
-                for(int k=0;k<solution.routes.get(j).nodes.size();k++){
-                    //falta considerar que se pueda pasar del tiempo
-                    insertionCost = solution.routes.get(j).nodes.get(k).CalculateCost(unrouted.get(i).destination);
-                    if(insertionCost<unrouted.get(i).insertionCost){
-                        chosenRoute=j;
-                        unrouted.get(i).insertionCost=insertionCost;
-                        insertLocation=k;
-                    }
+        Route newRoute;
+        Route bestRoute = new Route();
+
+        for(int i=0;i<solution.routes.size();i++){
+            bestInsertionCost=999;
+            for(int j=0;j< unrouted.size();j++){
+                newRoute=InsertRequest(unrouted.get(j),solution.routes.get(i),environment);
+                if(unrouted.get(j).insertionCost<bestInsertionCost){
+                    bestInsertionCost=unrouted.get(j).insertionCost;
+                    bestRoute=newRoute;
+                    chosenRequest=j;
                 }
             }
-            //insertar el request en la mejor ruta
-
+            if(bestInsertionCost<900){
+                solution.routes.set(i,bestRoute);
+                unrouted.remove(chosenRequest);
+            }
         }
+
         return solution;
     }
 
