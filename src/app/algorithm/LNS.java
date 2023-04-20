@@ -11,7 +11,7 @@ import java.util.Random;
 public class LNS {
 
     public Solution Solve(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount, Environment environment){
-        Solution solution = this.ConstructInitialSolution(requests,depot,carAmount,motorcycleAmount,environment);
+        Solution solution = this.ConstructInitialSolution(requests,depot,environment);
         Solution newSolution = new Solution();
         int iterations = 0;
         ArrayList<Request> unrouted;
@@ -25,20 +25,18 @@ public class LNS {
         return solution;
     }
 
-    public Solution ConstructInitialSolution(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount, Environment environment){
+    public Solution ConstructInitialSolution(ArrayList<Request> requests, Node depot, Environment environment){
         Solution solution = new Solution();
         Route route;
         int count = 0;
-        //debería pasarse como parámetro
-        //Environment environment = new Environment(70,50,45,30);
         //por el momento solo acepta numero de pedidos iniciales igual a la flota
         while (requests.size() > count){
             route = new Route();
             if(environment.carInUse<environment.carTotal){
-                route.vehicle = 'c';
+                //route.vehicle = 'c';
                 environment.carInUse++;
             } else if (environment.bikeInUse<environment.bikeTotal) {
-                route.vehicle = 'b';
+                //route.vehicle = 'b';
                 environment.bikeInUse++;
             }
             else{
@@ -77,25 +75,29 @@ public class LNS {
         int bestInsertionCost;
         int insertionCost;
         int insertLocation;
+        boolean insertionWasPossible=true;
         Route newRoute;
         Route bestRoute = new Route();
-
-        for(int i=0;i<solution.routes.size();i++){
-            bestInsertionCost=999;
-            for(int j=0;j< unrouted.size();j++){
-                newRoute=InsertRequest(unrouted.get(j),solution.routes.get(i),environment);
-                if(unrouted.get(j).insertionCost<bestInsertionCost){
-                    bestInsertionCost=unrouted.get(j).insertionCost;
-                    bestRoute=newRoute;
-                    chosenRequest=j;
+        while(insertionWasPossible && unrouted.size()!=0) {
+            insertionWasPossible=false;
+            for (int i = 0; i < solution.routes.size(); i++) {
+                bestInsertionCost = 999;
+                for (int j = 0; j < unrouted.size(); j++) {
+                    newRoute = InsertRequest(unrouted.get(j), solution.routes.get(i), environment);
+                    if (unrouted.get(j).insertionCost < bestInsertionCost) {
+                        bestInsertionCost = unrouted.get(j).insertionCost;
+                        bestRoute = newRoute;
+                        chosenRequest = j;
+                    }
+                }
+                if (bestInsertionCost < 900) {
+                    solution.routes.set(i, bestRoute);
+                    unrouted.remove(chosenRequest);
+                    insertionWasPossible=true;
+                    if(unrouted.size()==0)break;
                 }
             }
-            if(bestInsertionCost<900){
-                solution.routes.set(i,bestRoute);
-                unrouted.remove(chosenRequest);
-            }
         }
-
         return solution;
     }
 
@@ -132,8 +134,19 @@ public class LNS {
         return route;
     }
 
-    public boolean InsertRequest(Node previousRequestNode, Route route, Request request, Environment environment){
-        //se debe copiar la ruta para descartar los cambios si no se puede insertar
+    public Route InsertRequest(Request newRequest, Route route, Environment environment){
+        Route newRoute = new Route();
+        for(int i=0;i<route.nodes.size();i++){
+            newRoute.nodes.add(route.nodes.get(i));
+        }
+        for(int i=0;i<route.requests.size();i++){
+            newRoute.requests.add(route.requests.get(i));
+        }
+        newRoute.vehicle = route.vehicle;
+
+        //find best position
+        
+
         boolean inserted = false;
         int count =0;
         int y;

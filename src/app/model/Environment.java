@@ -6,23 +6,32 @@ public class Environment {
     public ArrayList<Node> vertex;
     public int width;
     public int height;
+    public ArrayList<Vehicle> vehicles;
     public int carTotal;
     public int carAvailable;
     public int carInUse;
-    public int carSpeed;
     public int bikeTotal;
     public int bikeAvailable;
     public int bikeInUse;
-    public int bikeSpeed;
     public Node depot;
     public Environment(){
 
     }
-    public Environment(int width, int height, int depotX, int depotY, int carTotal, int carSpeed, int bikeTotal, int bikeSpeed) {
+    public Environment(int width, int height, int depotX, int depotY, int carTotal, int carCapacity, int carSpeed, int carCost, int bikeTotal, int bikeCapacity, int bikeSpeed, int bikeCost) {
         this.carTotal=carTotal;
-        this.carSpeed=carSpeed;
         this.bikeTotal=bikeTotal;
-        this.bikeSpeed=bikeSpeed;
+        this.vehicles = new ArrayList<>();
+        Vehicle vehicle;
+        for(int i=0;i<bikeTotal;i++){
+            vehicle = new Vehicle('b',bikeCapacity,bikeSpeed,bikeCost);
+            this.vehicles.add(vehicle);
+        }
+
+        for(int i=0;i<carTotal;i++){
+            vehicle = new Vehicle('c',carCapacity,carSpeed,carCost);
+            this.vehicles.add(vehicle);
+        }
+
         Node node;
         this.vertex = new ArrayList<>();
         for (int y = 0; y <= height; y++){

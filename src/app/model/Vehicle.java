@@ -1,12 +1,14 @@
 package app.model;
 
 public class Vehicle {
-    public Node startDepot;
-    public Node endDepot;
+    public char type;
     public int capacity;
-
-    public Vehicle() {
-        this.startDepot = new Node();
-        this.endDepot = new Node();
+    public int speed;
+    public int cost;
+    public Vehicle(char type, int capacity, int speed, int cost) {
+        this.type = type;
+        this.capacity = capacity;
+        this.speed = speed;
+        this.cost = cost;
     }
 }
