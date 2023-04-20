@@ -62,6 +62,7 @@ public class LNS {
         while(m<n){
             if(random.nextBoolean()){
                 // está en duro, dará problemas cuando hayan muchos pedidos iniciales
+                //no se están removiendo pedidos como se debería, se están removiendo rutas
                 unrouted.add(solution.routes.get(m).requests.get(0));
                 solution.routes.remove(m);
             }
@@ -135,18 +136,45 @@ public class LNS {
     }
 
     public Route InsertRequest(Request newRequest, Route route, Environment environment){
+        //make a copy of the route to modify
         Route newRoute = new Route();
+        ArrayList<Node> newNodes;
+        ArrayList<Node> bestNodes= new ArrayList<>();
+        int bestInsertionCost=999;
+        int insertionCost=999;
+        int requestIndex=0;
+        int bestRequestIndex=0;
+
         for(int i=0;i<route.nodes.size();i++){
             newRoute.nodes.add(route.nodes.get(i));
         }
-        for(int i=0;i<route.requests.size();i++){
-            newRoute.requests.add(route.requests.get(i));
+        for(int i=0;i<route.stops.size();i++){
+            newRoute.stops.add(route.stops.get(i));
         }
         newRoute.vehicle = route.vehicle;
 
         //find best position
-        
+        //two cases:
+        //I'm at depot (the load can increase freely until it hits capacity)
+        //check every mayor node except the return to depot, that'll be a new route
+        for(int i=0;i<newRoute.stops.size()-1;i++){
+            if(newRoute.nodes.get(i).isRequest){
+                requestIndex++;
+            }
+            newNodes = InsertNode(newRequest,newRoute,i,environment);
+            if(insertionCost<bestInsertionCost){
+                bestInsertionCost=insertionCost;
+                bestNodes=newNodes;
+                bestRequestIndex=requestIndex;
+            }
+        }
+        newRoute.nodes=bestNodes;
+        newRoute.requests.add(bestRequestIndex,newRequest);
 
+        return newRoute;
+
+        //I'm on the road (load can't increase unless I go back to depot or pass a broken down vehicle)
+/*
         boolean inserted = false;
         int count =0;
         int y;
@@ -176,6 +204,35 @@ public class LNS {
         route.nodes.addAll(count,trip);
         trip = CalculateRoute(request.destination,nextRequestNode,environment);
         route.nodes.addAll(count+size-1,trip);
-        return inserted;
+        return inserted;*/
+    }
+
+    public ArrayList<Node> InsertNode(Request newRequest, Route route, int index, Environment environment){
+        ArrayList<Node> newNodes = new ArrayList<>();
+        ArrayList<Node> tripTo = new ArrayList<>();
+        ArrayList<Node> tripFrom = new ArrayList<>();
+        int x;
+        int y;
+
+        for(int i=0;i<route.nodes.size();i++){
+            newNodes.add(route.nodes.get(i));
+        }
+
+        for(int i=0;i< newNodes.size();i++){
+            if(newNodes.get(i).x == newRequest.destination.x && newNodes.get(i).y == newRequest.destination.y){
+                do {
+                    x=newNodes.get(i).x;
+                    y=newNodes.get(i).y;
+                    newNodes.remove(i);
+                }while(x!=route.stops.get(index+1).x || y!=route.stops.get(index+1).y);
+                tripTo = this.CalculateRoute(route.stops.get(index),newRequest.destination,environment);
+                tripTo.remove(tripTo.size()-1);
+                tripFrom = this.CalculateRoute(newRequest.destination,route.stops.get(index+1),environment);
+                tripTo.addAll(tripFrom);
+                newNodes.addAll(i,tripTo);
+            }
+        }
+
+        return newNodes;
     }
 }

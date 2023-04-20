@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class Request {
-    public Node origin;
     public Node destination;
     public int load;
     public ArrayList<LocalDateTime> originTimeWindow;
@@ -15,7 +14,6 @@ public class Request {
     public int currentDuration;
 
     public Request(){
-        this.origin = new Node();
         this.destination = new Node();
         this.originTimeWindow = new ArrayList<>();
         this.destinationTimeWindow = new ArrayList<>();
