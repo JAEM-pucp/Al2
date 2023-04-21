@@ -1,4 +1,8 @@
+import app.algorithm.LNS;
 import app.model.Environment;
+import app.model.Request;
+
+import java.util.ArrayList;
 
 // Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
 // then press Enter. You can now see whitespace characters in your code.
@@ -19,9 +23,16 @@ public class Main {
 
          */
         Environment environment;
-        environment = new Environment();
-
-
+        environment = new Environment(70, 50, 45, 30, 20, 25, 30, 5, 40, 4, 60, 3);
+        LNS lns = new LNS();
+        ArrayList<Request> requests = new ArrayList<>();
+        Request request = new Request(environment.GetNode(35,40),3,24);
+        environment.GetNode(35,40).isRequest=true;
+        environment.GetNode(35,40).request=request;
+        request = new Request(environment.GetNode(10,35),7,8);
+        environment.GetNode(10,35).isRequest=true;
+        environment.GetNode(10,35).request=request;
+        lns.Solve(requests,environment);
 
     }
 }

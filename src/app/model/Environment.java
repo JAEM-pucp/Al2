@@ -48,7 +48,7 @@ public class Environment {
         }
     }
 
-    public Node getNode(int x, int y){
+    public Node GetNode(int x, int y){
         return this.vertex.get(x+y*this.width);
     }
 }

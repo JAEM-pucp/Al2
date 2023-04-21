@@ -19,4 +19,11 @@ public class Solution {
             this.routes.add(route);
         }
     }
+
+    public int EvaluateSolution(){
+
+        
+
+        return 1;
+    }
 }

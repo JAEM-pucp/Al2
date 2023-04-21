@@ -21,4 +21,12 @@ public class Request {
         this.isActive = false;
         this.insertionCost=99999;
     }
+
+    public Request(Node destination, int load, int timeWindow) {
+        this.destination = destination;
+        this.load = load;
+        this.timeWindow = timeWindow;
+        this.isActive = false;
+        this.insertionCost=99999;
+    }
 }

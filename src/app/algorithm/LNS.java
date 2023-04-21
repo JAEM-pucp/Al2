@@ -10,7 +10,11 @@ import java.util.Random;
 //45 30 almacén
 public class LNS {
 
-    public Solution Solve(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount, Environment environment){
+    public LNS(){
+
+    }
+
+    public Solution Solve(ArrayList<Request> requests, Environment environment){
         //make a copy of requests called unrouted
         ArrayList<Request> unrouted = new ArrayList<>();
         for(int i=0;i< requests.size();i++){
@@ -113,28 +117,28 @@ public class LNS {
         int originY = origin.y;
         if (destination.x>originX){
             for (; originX <= destination.x; originX++){
-                route.add(environment.getNode(originX,originY));
+                route.add(environment.GetNode(originX,originY));
             }
         }
         else if (destination.x<originX){
             for (; originX <= destination.x; originX--){
-                route.add(environment.getNode(originX,originY));
+                route.add(environment.GetNode(originX,originY));
             }
         }
         else{
-            route.add(environment.getNode(originX,originY));
+            route.add(environment.GetNode(originX,originY));
         }
 
         if (destination.y>originY){
             originY++;
             for (; originY <= destination.y; originY++){
-                route.add(environment.getNode(originX,originY));
+                route.add(environment.GetNode(originX,originY));
             }
         }
         else if (destination.y<originY){
             originY--;
             for (; originY <= destination.y; originY--){
-                route.add(environment.getNode(originX,originY));
+                route.add(environment.GetNode(originX,originY));
             }
         }
         return route;
