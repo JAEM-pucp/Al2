@@ -11,7 +11,8 @@ public class Request {
     public boolean isActive;
     public int insertionCost;
     public int timeWindow;
-    public int currentDuration;
+    public int duration;
+    public int distance;
 
     public Request(){
         this.destination = new Node();

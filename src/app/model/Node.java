@@ -6,6 +6,7 @@ public class Node {
     public boolean isDepot;
     public boolean isBlocked;
     public boolean isRequest;
+    public Request request;
 
     public Node() {
     }
@@ -15,6 +16,7 @@ public class Node {
         this.isDepot = isDepot;
         this.isBlocked = isBlocked;
         this.isRequest = isRequest;
+        this.request = null;
     }
 
     public int CalculateCost(Node node){

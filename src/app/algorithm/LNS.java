@@ -92,6 +92,8 @@ public class LNS {
                     }
                 }
                 if (bestInsertionCost < 900) {
+                    bestRoute.vehicle.load+=unrouted.get(chosenRequest).load;
+                    bestRoute.FixDurations();
                     solution.routes.set(i, bestRoute);
                     unrouted.remove(chosenRequest);
                     insertionWasPossible=true;
@@ -170,49 +172,27 @@ public class LNS {
         return newRoute;
 
         //I'm on the road (load can't increase unless I go back to depot or pass a broken down vehicle)
-/*
-        boolean inserted = false;
-        int count =0;
-        int y;
-        int x;
-        int size;
-        ArrayList<Node> trip = new ArrayList<>();
-        Node nextRequestNode = new Node();
-        while(count<route.nodes.size()){
-            x = route.nodes.get(count).x;
-            y = route.nodes.get(count).y;
-            if(x==previousRequestNode.x && y==previousRequestNode.y){
-                break;
-            }
-            count++;
-        }
-        route.nodes.remove(count);
-        while(count<route.nodes.size()){
-            nextRequestNode = route.nodes.get(count);
-            route.nodes.remove(count);
-            if(nextRequestNode.isDepot || nextRequestNode.isRequest){
-                break;
-            }
-        }
-        trip = CalculateRoute(previousRequestNode,request.destination,environment);
-        size = trip.size();
-        trip.remove(size-1);
-        route.nodes.addAll(count,trip);
-        trip = CalculateRoute(request.destination,nextRequestNode,environment);
-        route.nodes.addAll(count+size-1,trip);
-        return inserted;*/
+
     }
 
     public ArrayList<Node> InsertNode(Request newRequest, Route route, int index, Environment environment){
         ArrayList<Node> newNodes = new ArrayList<>();
+        ArrayList<Node> newStops = new ArrayList<>();
         ArrayList<Node> tripTo = new ArrayList<>();
         ArrayList<Node> tripFrom = new ArrayList<>();
         int x;
         int y;
+        int cost=0;
+        int stopIndex = 0;
 
         for(int i=0;i<route.nodes.size();i++){
             newNodes.add(route.nodes.get(i));
         }
+
+        for(int i=0;i<route.stops.size();i++){
+            newStops.add(route.stops.get(i));
+        }
+        newStops.add(index+1,newRequest.destination);
 
         for(int i=0;i< newNodes.size();i++){
             if(newNodes.get(i).x == newRequest.destination.x && newNodes.get(i).y == newRequest.destination.y){
@@ -228,6 +208,21 @@ public class LNS {
                 newNodes.addAll(i,tripTo);
             }
         }
+
+        for(int i=0;i<newNodes.size();i++){
+            if(newNodes.get(i).x==newStops.get(stopIndex).x && newNodes.get(i).y==newStops.get(stopIndex).y && newNodes.get(i).isRequest){
+                cost+=i-newNodes.get(i).request.timeWindow;
+                if(i/route.vehicle.speed>newNodes.get(i).request.timeWindow){
+                    cost+=3000;
+                }
+                stopIndex++;
+            }
+            if(stopIndex==newStops.size())break;
+        }
+        if(route.vehicle.load+ newRequest.load>route.vehicle.capacity){
+            cost+=3000;
+        }
+        newRequest.insertionCost=cost;
 
         return newNodes;
     }
