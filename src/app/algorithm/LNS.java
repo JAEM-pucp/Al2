@@ -30,36 +30,16 @@ public class LNS {
     }
 
     public Solution ConstructInitialSolution(ArrayList<Request> unrouted, Environment environment){
-        /*Solution solution = new Solution();
-        Route route;
-        int count = 0;
-        //por el momento solo acepta numero de pedidos iniciales igual a la flota
-        while (requests.size() > count){
-            route = new Route();
-            if(environment.carInUse<environment.carTotal){
-                //route.vehicle = 'c';
-                environment.carInUse++;
-            } else if (environment.bikeInUse<environment.bikeTotal) {
-                //route.vehicle = 'b';
-                environment.bikeInUse++;
-            }
-            else{
-                break;
-            }
-            route.nodes = this.CalculateRoute(depot,requests.get(count).destination,environment);
-            route.nodes.remove(route.nodes.size()-1);
-            route.nodes.addAll(this.CalculateRoute(requests.get(count).destination, depot,environment));
-            route.requests.add(requests.get(count));
-            requests.get(count).isActive=true;
-            count++;
-        }
-*/
-        Solution solution = new Solution();
+        Solution solution = new Solution(environment);
 
         boolean noChanges = false;
 
         while(!noChanges && unrouted.size()!=0){
-            for()
+            for(int i=0;i<solution.routes.size();i++){
+                solution.routes.set(i,this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment));
+                solution.routes.get(i).FixDurations();
+                unrouted.remove(0);
+            }
         }
 
         return solution;
