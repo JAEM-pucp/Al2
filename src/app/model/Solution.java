@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 public class Solution {
     public ArrayList<Route> routes;
+    public int requestAmount;
 
     public Solution(Environment environment) {
         this.routes = new ArrayList<>();

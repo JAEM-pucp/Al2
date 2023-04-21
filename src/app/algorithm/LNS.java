@@ -22,7 +22,7 @@ public class LNS {
         while(iterations < 10){
             //needs proper copy function
             //newSolution = solution;
-            unrouted.addAll(this.Destroy(newSolution));
+            unrouted.addAll(this.Destroy(newSolution,environment));
             this.Repair(newSolution,unrouted,environment);
             iterations++;
         }
@@ -31,34 +31,45 @@ public class LNS {
 
     public Solution ConstructInitialSolution(ArrayList<Request> unrouted, Environment environment){
         Solution solution = new Solution(environment);
-
-        boolean noChanges = false;
-
+        Route newRoute;
+        boolean noChanges=true;
+        int requestsToEvaluate=0;
+        solution.requestAmount= unrouted.size();
         while(!noChanges && unrouted.size()!=0){
+            noChanges=true;
             for(int i=0;i<solution.routes.size();i++){
-                solution.routes.set(i,this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment));
-                solution.routes.get(i).FixDurations();
-                unrouted.remove(0);
+                newRoute=this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment);
+                if(unrouted.get(0).insertionCost<900){
+                    solution.routes.set(i,newRoute);
+                    solution.routes.get(i).FixDurations();
+                    solution.routes.get(i).vehicle.load+=unrouted.get(0).load;
+                    unrouted.remove(0);
+                    noChanges=false;
+                }
+                else{
+                    requestsToEvaluate++;
+                }
             }
         }
 
         return solution;
     }
 
-    public ArrayList<Request> Destroy(Solution solution){
-        //number of trips to be removed from the solution
-        int n = 3;
-        int m = 0;
-        ArrayList<Request> unrouted = new ArrayList<>();
+    public ArrayList<Request> Destroy(Solution solution, Environment environment){
         Random random = new Random();
-        while(m<n){
-            if(random.nextBoolean()){
-                // está en duro, dará problemas cuando hayan muchos pedidos iniciales
-                //no se están removiendo pedidos como se debería, se están removiendo rutas
-                unrouted.add(solution.routes.get(m).requests.get(0));
-                solution.routes.remove(m);
+        ArrayList<Request> requests;
+        ArrayList<Request> unrouted = new ArrayList<>();
+        int eliminated=0;
+        while(eliminated< solution.requestAmount/3) {
+            for (int i = 0; i < solution.routes.size(); i++) {
+                requests = solution.routes.get(i).GetRequests();
+                for (int j = 0; j < requests.size(); i++) {
+                    if (random.nextBoolean()) {
+                        this.RemoveRequest(requests.get(j),solution.routes.get(i),environment);
+                        eliminated++;
+                    }
+                }
             }
-            m++;
         }
         return unrouted;
     }
@@ -217,5 +228,37 @@ public class LNS {
         newRequest.insertionCost=cost;
 
         return newNodes;
+    }
+
+    public int RemoveRequest(Request request, Route route, Environment environment){
+        int positionAtStops=0;
+        int positionAtNodes=0;
+        int x;
+        int y;
+        ArrayList<Node> trip;
+
+        for(int i=0;i<route.stops.size();i++){
+            if(route.stops.get(i).x==request.destination.x && route.stops.get(i).y==request.destination.y){
+                positionAtStops=i;
+                break;
+            }
+        }
+
+        for(int i=0;i<route.nodes.size();i++){
+            if(route.nodes.get(i).x==route.stops.get(positionAtStops-1).x && route.nodes.get(i).y==route.stops.get(positionAtStops-1).y){
+                do {
+                    positionAtNodes=i;
+                    x=route.nodes.get(i).x;
+                    y=route.nodes.get(i).y;
+                    route.nodes.remove(i);
+                }while(x!=route.stops.get(positionAtStops+1).x || y!=route.stops.get(positionAtStops+1).y);
+                break;
+            }
+        }
+        trip = this.CalculateRoute(route.stops.get(positionAtStops-1),route.stops.get(positionAtStops+1),environment);
+        route.nodes.addAll(positionAtNodes,trip);
+        route.stops.remove(positionAtStops);
+        route.FixDurations();
+        return 1;
     }
 }

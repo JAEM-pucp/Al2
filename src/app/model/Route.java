@@ -32,4 +32,15 @@ public class Route {
         }
         return 1;
     }
+
+    public ArrayList<Request> GetRequests(){
+        ArrayList<Request> requests = new ArrayList<>();
+        for(int i=0;i<this.stops.size();i++){
+            if(this.stops.get(i).isRequest){
+                requests.add(this.stops.get(i).request);
+            }
+        }
+        return requests;
+    }
+
 }
