@@ -11,22 +11,26 @@ import java.util.Random;
 public class LNS {
 
     public Solution Solve(ArrayList<Request> requests, Node depot, int carAmount, int motorcycleAmount, Environment environment){
-        Solution solution = this.ConstructInitialSolution(requests,depot,environment);
-        Solution newSolution = new Solution();
+        //make a copy of requests called unrouted
+        ArrayList<Request> unrouted = new ArrayList<>();
+        for(int i=0;i< requests.size();i++){
+            unrouted.add(requests.get(i));
+        }
+        Solution solution = this.ConstructInitialSolution(unrouted,environment);
+        Solution newSolution = new Solution(environment);
         int iterations = 0;
-        ArrayList<Request> unrouted;
         while(iterations < 10){
             //needs proper copy function
             //newSolution = solution;
-            unrouted = this.Destroy(newSolution);
+            unrouted.addAll(this.Destroy(newSolution));
             this.Repair(newSolution,unrouted,environment);
             iterations++;
         }
         return solution;
     }
 
-    public Solution ConstructInitialSolution(ArrayList<Request> requests, Node depot, Environment environment){
-        Solution solution = new Solution();
+    public Solution ConstructInitialSolution(ArrayList<Request> unrouted, Environment environment){
+        /*Solution solution = new Solution();
         Route route;
         int count = 0;
         //por el momento solo acepta numero de pedidos iniciales igual a la flota
@@ -48,6 +52,14 @@ public class LNS {
             route.requests.add(requests.get(count));
             requests.get(count).isActive=true;
             count++;
+        }
+*/
+        Solution solution = new Solution();
+
+        boolean noChanges = false;
+
+        while(!noChanges && unrouted.size()!=0){
+            for()
         }
 
         return solution;
