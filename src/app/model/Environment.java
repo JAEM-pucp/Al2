@@ -18,6 +18,20 @@ public class Environment {
         this.vertex = new ArrayList<>();
         this.vehicles = new ArrayList<>();
     }
+
+    public Environment(int width, int height, int carTotal, int carAvailable, int carInUse, int bikeTotal, int bikeAvailable, int bikeInUse) {
+        this.width = width;
+        this.height = height;
+        this.carTotal = carTotal;
+        this.carAvailable = carAvailable;
+        this.carInUse = carInUse;
+        this.bikeTotal = bikeTotal;
+        this.bikeAvailable = bikeAvailable;
+        this.bikeInUse = bikeInUse;
+        this.vertex = new ArrayList<>();
+        this.vehicles = new ArrayList<>();
+    }
+
     public Environment(int width, int height, int depotX, int depotY, int carTotal, int carCapacity, int carSpeed, int carCost, int bikeTotal, int bikeCapacity, int bikeSpeed, int bikeCost) {
         this.carTotal=carTotal;
         this.bikeTotal=bikeTotal;
@@ -64,12 +78,17 @@ public class Environment {
     }
 
     public Environment CopyEnvironment(ArrayList<Request> requests){
-        Environment environment = new Environment();
+        Environment environment = new Environment(this.width,this.height,this.carTotal,this.carAvailable
+                ,this.carInUse,this.bikeTotal,this.bikeAvailable,this.bikeInUse);
         Node node;
         Request request;
+        Vehicle vehicle;
         for(int i=0;i<this.vertex.size();i++){
             node = new Node(this.vertex.get(i).x,this.vertex.get(i).y,this.vertex.get(i).isDepot
                     ,this.vertex.get(i).isBlocked,this.vertex.get(i).isRequest);
+            if(node.isDepot){
+                environment.depot=node;
+            }
             environment.vertex.add(node);
         }
         for(int i=0;i< requests.size();i++){
@@ -77,6 +96,11 @@ public class Environment {
                     ,requests.get(i).load,requests.get(i).insertionCost,requests.get(i).timeWindow
                     ,requests.get(i).duration,requests.get(i).distance,requests.get(i).id);
             environment.GetNode(requests.get(i).destination.x,requests.get(i).destination.y).request=request;
+        }
+        for(int i=0;i<this.vehicles.size();i++){
+            vehicle = new Vehicle(this.vehicles.get(i).type,this.vehicles.get(i).capacity,this.vehicles.get(i).speed
+                    ,this.vehicles.get(i).cost,this.vehicles.get(i).load,this.vehicles.get(i).id);
+            environment.vehicles.add(vehicle);
         }
         return environment;
     }

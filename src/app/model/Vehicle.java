@@ -15,4 +15,13 @@ public class Vehicle {
         this.load = 0;
         this.id = id;
     }
+
+    public Vehicle(char type, int capacity, int speed, int cost, int load, int id) {
+        this.type = type;
+        this.capacity = capacity;
+        this.speed = speed;
+        this.cost = cost;
+        this.load = load;
+        this.id = id;
+    }
 }

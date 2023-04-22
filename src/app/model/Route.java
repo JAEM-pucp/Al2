@@ -23,9 +23,11 @@ public class Route {
     public int FixDurations(){
         int stopIndex = 0;
         for(int i=0;i<this.nodes.size();i++){
-            if(this.nodes.get(i).x==this.stops.get(stopIndex).x && this.nodes.get(i).y==this.stops.get(stopIndex).y && this.nodes.get(i).isRequest){
-                this.nodes.get(i).request.distance=i;
-                this.nodes.get(i).request.duration=i/this.vehicle.speed;
+            if(this.nodes.get(i).x==this.stops.get(stopIndex).x && this.nodes.get(i).y==this.stops.get(stopIndex).y){
+                if(this.nodes.get(i).isRequest){
+                    this.nodes.get(i).request.distance=i;
+                    this.nodes.get(i).request.duration=(int)(((float)i/this.vehicle.speed)*60);
+                }
                 stopIndex++;
             }
             if(stopIndex==this.stops.size())break;
@@ -57,10 +59,10 @@ public class Route {
     public Route CopyRoute(Environment environment){
         Route route = new Route();
         for(int i=0;i<this.nodes.size();i++){
-            route.nodes.add(environment.GetNode(this.nodes.get(i).x,this.nodes.get(i).x));
+            route.nodes.add(environment.GetNode(this.nodes.get(i).x,this.nodes.get(i).y));
         }
         for(int i=0;i<this.stops.size();i++){
-            route.stops.add(environment.GetNode(this.stops.get(i).x,this.stops.get(i).x));
+            route.stops.add(environment.GetNode(this.stops.get(i).x,this.stops.get(i).y));
         }
         route.vehicle = environment.GetVehicle(this.vehicle.id);
         return route;

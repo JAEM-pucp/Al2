@@ -27,7 +27,7 @@ public class LNS {
         }
         Solution solution = this.ConstructInitialSolution(unrouted,environment);
         Solution bestSolution = solution;
-        Solution newSolution = new Solution(environment);
+        Solution newSolution;
         int iterations = 0;
         while(iterations < 10){
             //needs proper copy function
@@ -62,21 +62,18 @@ public class LNS {
         Solution solution = new Solution(environment);
         Route newRoute;
         boolean noChanges=false;
-        int requestsToEvaluate=0;
         solution.requestAmount= unrouted.size();
         while(!noChanges && unrouted.size()!=0){
             noChanges=true;
             for(int i=0;i<solution.routes.size();i++){
                 newRoute=this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment);
                 if(unrouted.get(0).insertionCost<900){
+                    newRoute.FixDurations();
                     solution.routes.set(i,newRoute);
-                    solution.routes.get(i).FixDurations();
                     solution.routes.get(i).vehicle.load+=unrouted.get(0).load;
                     unrouted.remove(0);
                     noChanges=false;
-                }
-                else{
-                    requestsToEvaluate++;
+                    if(unrouted.size()==0)break;
                 }
             }
         }
@@ -92,12 +89,15 @@ public class LNS {
         while(eliminated< solution.requestAmount/2) {
             for (int i = 0; i < solution.routes.size(); i++) {
                 requests = solution.routes.get(i).GetRequests();
-                for (int j = 0; j < requests.size(); i++) {
+                for (int j = 0; j < requests.size(); j++) {
                     if (random.nextBoolean()) {
                         this.RemoveRequest(requests.get(j),solution.routes.get(i),environment);
+                        unrouted.add(requests.get(j));
                         eliminated++;
+                        if(eliminated>= solution.requestAmount/2)break;
                     }
                 }
+                if(eliminated>= solution.requestAmount/2)break;
             }
         }
         return unrouted;
@@ -168,17 +168,23 @@ public class LNS {
                 route.add(environment.GetNode(originX,originY));
             }
         }
+        else{
+            route.add(environment.GetNode(originX,originY));
+        }
         return route;
     }
 
     public Route InsertRequest(Request newRequest, Route route, Environment environment){
         //make a copy of the route to modify
         Route newRoute = new Route();
+        Route bestRoute = route;
         ArrayList<Node> newNodes;
-        ArrayList<Node> bestNodes= new ArrayList<>();
+        ArrayList<Node> bestNodes= route.nodes;
+        ArrayList<Node> bestStops = route.stops;
         int bestInsertionCost=999;
         int requestIndex=0;
         int bestRequestIndex=0;
+        boolean change = false;
 
         for(int i=0;i<route.nodes.size();i++){
             newRoute.nodes.add(route.nodes.get(i));
@@ -197,13 +203,21 @@ public class LNS {
             if(newRequest.insertionCost<bestInsertionCost){
                 bestInsertionCost=newRequest.insertionCost;
                 bestNodes=newNodes;
+                bestStops=newRoute.stops;
                 bestRequestIndex=i;
+                change=true;
             }
         }
-        newRoute.nodes=bestNodes;
-        newRoute.stops.add(bestRequestIndex+1,newRequest.destination);
+        if(change){
+            bestRoute = new Route();
+            bestRoute.nodes=bestNodes;
+            bestRoute.stops=bestStops;
+            bestRoute.stops.add(bestRequestIndex+1,newRequest.destination);
+            bestRoute.vehicle=route.vehicle;
+        }
 
-        return newRoute;
+
+        return bestRoute;
 
         //I'm on the road (load can't increase unless I go back to depot or pass a broken down vehicle)
 
@@ -247,10 +261,13 @@ public class LNS {
         }
 
         for(int i=0;i<newNodes.size();i++){
-            if(newNodes.get(i).x==newStops.get(stopIndex).x && newNodes.get(i).y==newStops.get(stopIndex).y && newNodes.get(i).isRequest){
-                cost+=i-newNodes.get(i).request.timeWindow;
-                if(i/route.vehicle.speed>newNodes.get(i).request.timeWindow){
-                    cost+=3000;
+
+            if(newNodes.get(i).x==newStops.get(stopIndex).x && newNodes.get(i).y==newStops.get(stopIndex).y){
+                if(newNodes.get(i).isRequest) {
+                    cost += i - newNodes.get(i).request.timeWindow;
+                    if (i / route.vehicle.speed > newNodes.get(i).request.timeWindow) {
+                        cost += 3000;
+                    }
                 }
                 stopIndex++;
             }
@@ -269,6 +286,7 @@ public class LNS {
         int positionAtNodes=0;
         int x;
         int y;
+        int amountRemoved=0;
         ArrayList<Node> trip;
 
         for(int i=0;i<route.stops.size();i++){
@@ -285,13 +303,15 @@ public class LNS {
                     x=route.nodes.get(i).x;
                     y=route.nodes.get(i).y;
                     route.nodes.remove(i);
-                }while(x!=route.stops.get(positionAtStops+1).x || y!=route.stops.get(positionAtStops+1).y);
+                    amountRemoved++;
+                }while(x!=route.stops.get(positionAtStops+1).x || y!=route.stops.get(positionAtStops+1).y || amountRemoved<=1);
                 break;
             }
         }
         trip = this.CalculateRoute(route.stops.get(positionAtStops-1),route.stops.get(positionAtStops+1),environment);
         route.nodes.addAll(positionAtNodes,trip);
         route.stops.remove(positionAtStops);
+        route.vehicle.load-=request.load;
         route.FixDurations();
         return 1;
     }

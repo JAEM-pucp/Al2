@@ -27,11 +27,11 @@ public class Main {
         environment = new Environment(70, 50, 45, 30, 4, 25, 30, 5, 6, 4, 60, 3);
         LNS lns = new LNS();
         ArrayList<Request> requests = new ArrayList<>();
-        Request request = new Request(environment.GetNode(35,41),3,24,0);
+        Request request = new Request(environment.GetNode(35,41),3,24*60,0);
         environment.GetNode(35,41).isRequest=true;
         environment.GetNode(35,41).request=request;
         requests.add(request);
-        request = new Request(environment.GetNode(10,35),7,8,1);
+        request = new Request(environment.GetNode(10,35),7,8*60,1);
         environment.GetNode(10,35).isRequest=true;
         environment.GetNode(10,35).request=request;
         requests.add(request);
