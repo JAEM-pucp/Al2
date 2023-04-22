@@ -6,6 +6,11 @@ public class Solution {
     public ArrayList<Route> routes;
     public int requestAmount;
 
+    public Solution(){
+        this.routes = new ArrayList<>();
+        this.requestAmount=0;
+    }
+
     public Solution(Environment environment) {
         this.routes = new ArrayList<>();
         Route route;
@@ -20,10 +25,23 @@ public class Solution {
         }
     }
 
-    public int EvaluateSolution(){
+    public float EvaluateSolution(){
+        float costAvg=0;
+        for(int i=0;i<this.routes.size();i++){
+            costAvg+=this.routes.get(i).EvaluateRoute();
+        }
 
-        
+        return costAvg/this.routes.size();
+    }
 
-        return 1;
+    public Solution CopySolution(Environment environment){
+        Solution solution = new Solution();
+        Route route;
+        for(int i=0;i<this.routes.size();i++){
+            route = this.routes.get(i).CopyRoute(environment);
+            solution.routes.add(route);
+        }
+        solution.requestAmount=this.requestAmount;
+        return solution;
     }
 }

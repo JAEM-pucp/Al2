@@ -16,18 +16,43 @@ public class LNS {
 
     public Solution Solve(ArrayList<Request> requests, Environment environment){
         //make a copy of requests called unrouted
+        Environment newEnvironment;
+        Environment bestEnvironment;
         ArrayList<Request> unrouted = new ArrayList<>();
+        ArrayList<Request> newUnrouted = new ArrayList<>();
+        ArrayList<Request> bestUnrouted;
+        Request request;
         for(int i=0;i< requests.size();i++){
             unrouted.add(requests.get(i));
         }
         Solution solution = this.ConstructInitialSolution(unrouted,environment);
+        Solution bestSolution = solution;
         Solution newSolution = new Solution(environment);
         int iterations = 0;
         while(iterations < 10){
             //needs proper copy function
-            //newSolution = solution;
-            unrouted.addAll(this.Destroy(newSolution,environment));
-            this.Repair(newSolution,unrouted,environment);
+            newEnvironment = environment.CopyEnvironment(requests);
+            for(int i=0;i< unrouted.size();i++){
+                request = unrouted.get(i).CopyRequest(newEnvironment);
+                newUnrouted.add(request);
+            }
+            newSolution = solution.CopySolution(newEnvironment);
+
+            newUnrouted.addAll(this.Destroy(newSolution,newEnvironment));
+            this.Repair(newSolution,newUnrouted,newEnvironment);
+
+            if(newSolution.EvaluateSolution()< bestSolution.EvaluateSolution()){
+                bestSolution = newSolution;
+                bestEnvironment = newEnvironment;
+                bestUnrouted = newUnrouted;
+            }
+
+            if(newSolution.EvaluateSolution()< solution.EvaluateSolution()+0.1){
+                solution = newSolution;
+                environment = newEnvironment;
+                unrouted = newUnrouted;
+            }
+
             iterations++;
         }
         return solution;
@@ -36,7 +61,7 @@ public class LNS {
     public Solution ConstructInitialSolution(ArrayList<Request> unrouted, Environment environment){
         Solution solution = new Solution(environment);
         Route newRoute;
-        boolean noChanges=true;
+        boolean noChanges=false;
         int requestsToEvaluate=0;
         solution.requestAmount= unrouted.size();
         while(!noChanges && unrouted.size()!=0){
@@ -64,7 +89,7 @@ public class LNS {
         ArrayList<Request> requests;
         ArrayList<Request> unrouted = new ArrayList<>();
         int eliminated=0;
-        while(eliminated< solution.requestAmount/3) {
+        while(eliminated< solution.requestAmount/2) {
             for (int i = 0; i < solution.routes.size(); i++) {
                 requests = solution.routes.get(i).GetRequests();
                 for (int j = 0; j < requests.size(); i++) {
@@ -119,11 +144,13 @@ public class LNS {
             for (; originX <= destination.x; originX++){
                 route.add(environment.GetNode(originX,originY));
             }
+            originX--;
         }
         else if (destination.x<originX){
-            for (; originX <= destination.x; originX--){
+            for (; originX >= destination.x; originX--){
                 route.add(environment.GetNode(originX,originY));
             }
+            originX++;
         }
         else{
             route.add(environment.GetNode(originX,originY));
@@ -137,7 +164,7 @@ public class LNS {
         }
         else if (destination.y<originY){
             originY--;
-            for (; originY <= destination.y; originY--){
+            for (; originY >= destination.y; originY--){
                 route.add(environment.GetNode(originX,originY));
             }
         }
@@ -191,6 +218,7 @@ public class LNS {
         int y;
         int cost=0;
         int stopIndex = 0;
+        int amountRemoved=0;
 
         for(int i=0;i<route.nodes.size();i++){
             newNodes.add(route.nodes.get(i));
@@ -202,17 +230,19 @@ public class LNS {
         newStops.add(index+1,newRequest.destination);
 
         for(int i=0;i< newNodes.size();i++){
-            if(newNodes.get(i).x == newRequest.destination.x && newNodes.get(i).y == newRequest.destination.y){
+            if(newNodes.get(i).x == route.stops.get(index).x && newNodes.get(i).y == route.stops.get(index).y){
                 do {
                     x=newNodes.get(i).x;
                     y=newNodes.get(i).y;
                     newNodes.remove(i);
-                }while(x!=route.stops.get(index+1).x || y!=route.stops.get(index+1).y);
+                    amountRemoved++;
+                }while(amountRemoved<=1 || x!=route.stops.get(index+1).x || y!=route.stops.get(index+1).y);
                 tripTo = this.CalculateRoute(route.stops.get(index),newRequest.destination,environment);
                 tripTo.remove(tripTo.size()-1);
                 tripFrom = this.CalculateRoute(newRequest.destination,route.stops.get(index+1),environment);
                 tripTo.addAll(tripFrom);
                 newNodes.addAll(i,tripTo);
+                break;
             }
         }
 

@@ -1,6 +1,7 @@
 import app.algorithm.LNS;
 import app.model.Environment;
 import app.model.Request;
+import app.model.Solution;
 
 import java.util.ArrayList;
 
@@ -23,16 +24,18 @@ public class Main {
 
          */
         Environment environment;
-        environment = new Environment(70, 50, 45, 30, 20, 25, 30, 5, 40, 4, 60, 3);
+        environment = new Environment(70, 50, 45, 30, 4, 25, 30, 5, 6, 4, 60, 3);
         LNS lns = new LNS();
         ArrayList<Request> requests = new ArrayList<>();
-        Request request = new Request(environment.GetNode(35,40),3,24);
-        environment.GetNode(35,40).isRequest=true;
-        environment.GetNode(35,40).request=request;
-        request = new Request(environment.GetNode(10,35),7,8);
+        Request request = new Request(environment.GetNode(35,41),3,24,0);
+        environment.GetNode(35,41).isRequest=true;
+        environment.GetNode(35,41).request=request;
+        requests.add(request);
+        request = new Request(environment.GetNode(10,35),7,8,1);
         environment.GetNode(10,35).isRequest=true;
         environment.GetNode(10,35).request=request;
-        lns.Solve(requests,environment);
+        requests.add(request);
+        Solution solution = lns.Solve(requests,environment);
 
     }
 }

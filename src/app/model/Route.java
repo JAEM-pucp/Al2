@@ -43,4 +43,26 @@ public class Route {
         return requests;
     }
 
+    public float EvaluateRoute(){
+        float costAvg=0;
+        int requestAmount = this.GetRequestAmount();
+        ArrayList<Request> requests = this.GetRequests();
+        for(int i=0;i<requestAmount;i++){
+            //duration = x% timewindow
+            costAvg+=100*requests.get(i).duration/requests.get(i).timeWindow;
+        }
+        return costAvg/requestAmount;
+    }
+
+    public Route CopyRoute(Environment environment){
+        Route route = new Route();
+        for(int i=0;i<this.nodes.size();i++){
+            route.nodes.add(environment.GetNode(this.nodes.get(i).x,this.nodes.get(i).x));
+        }
+        for(int i=0;i<this.stops.size();i++){
+            route.stops.add(environment.GetNode(this.stops.get(i).x,this.stops.get(i).x));
+        }
+        route.vehicle = environment.GetVehicle(this.vehicle.id);
+        return route;
+    }
 }
