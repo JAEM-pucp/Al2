@@ -310,6 +310,10 @@ public class LNS {
         int amountRemoved=0;
         ArrayList<Node> trip;
 
+        if(!route.nodes.get(0).isRequest && !route.nodes.get(0).isDepot){
+            route.stops.add(0,route.nodes.get(0));
+        }
+
         for(int i=0;i<route.stops.size();i++){
             if(route.stops.get(i).x==request.destination.x && route.stops.get(i).y==request.destination.y){
                 positionAtStops=i;
@@ -334,6 +338,11 @@ public class LNS {
         route.stops.remove(positionAtStops);
         route.vehicle.load-=request.load;
         route.FixDurations();
+
+        if(!route.stops.get(0).isRequest && !route.stops.get(0).isDepot){
+            route.stops.remove(0);
+        }
+
         return 1;
     }
 
