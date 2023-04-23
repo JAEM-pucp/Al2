@@ -25,6 +25,7 @@ public class Main {
          */
         Environment environment;
         environment = new Environment(70, 50, 45, 30, 4, 25, 30, 5, 6, 4, 60, 3);
+        environment.SetBlockage(44,30);
         LNS lns = new LNS();
         ArrayList<Request> requests = new ArrayList<>();
         Request request = new Request(environment.GetNode(35,41),3,24*60,0);

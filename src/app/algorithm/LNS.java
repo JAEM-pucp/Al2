@@ -137,7 +137,28 @@ public class LNS {
     }
 
     public ArrayList<Node> CalculateRoute(Node origin, Node destination, Environment environment){
-        ArrayList<Node> route = new ArrayList<>();
+        ArrayList<Node> nodes = new ArrayList<>();
+        Node currentNode = origin;
+        Node chosenMove = new Node();
+        int lowestCost = 999;
+        int cost;
+        nodes.add(currentNode);
+        ArrayList<Node> possibleMoves;
+        while(true){
+            possibleMoves = this.GetPossibleMoves(currentNode,environment);
+            for(int i=0;i< possibleMoves.size();i++){
+                cost = possibleMoves.get(i).CalculateScore(destination);
+                if(cost < lowestCost){
+                    lowestCost = cost;
+                    chosenMove = possibleMoves.get(i);
+                }
+            }
+            nodes.add(chosenMove);
+            if (chosenMove==destination)break;
+            currentNode = chosenMove;
+        }
+        return nodes;
+        /*ArrayList<Node> route = new ArrayList<>();
         int originX = origin.x;
         int originY = origin.y;
         if (destination.x>originX){
@@ -171,7 +192,7 @@ public class LNS {
         else{
             route.add(environment.GetNode(originX,originY));
         }
-        return route;
+        return route;*/
     }
 
     public Route InsertRequest(Request newRequest, Route route, Environment environment){
@@ -314,5 +335,27 @@ public class LNS {
         route.vehicle.load-=request.load;
         route.FixDurations();
         return 1;
+    }
+
+    public ArrayList<Node> GetPossibleMoves(Node node, Environment environment){
+        ArrayList<Node> nodes = new ArrayList<>();
+        Node toAdd=null;
+        toAdd = environment.GetNode(node.x-1,node.y);
+        if(toAdd!=null){
+            nodes.add(toAdd);
+        }
+        toAdd = environment.GetNode(node.x,node.y+1);
+        if(toAdd!=null){
+            nodes.add(toAdd);
+        }
+        toAdd = environment.GetNode(node.x+1,node.y);
+        if(toAdd!=null){
+            nodes.add(toAdd);
+        }
+        toAdd = environment.GetNode(node.x,node.y-1);
+        if(toAdd!=null){
+            nodes.add(toAdd);
+        }
+        return nodes;
     }
 }

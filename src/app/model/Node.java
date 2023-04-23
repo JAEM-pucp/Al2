@@ -22,4 +22,10 @@ public class Node {
     public int CalculateCost(Node node){
         return Math.abs(this.x-node.x)+Math.abs(this.y- node.y);
     }
+
+    public int CalculateScore(Node node){
+        int add = 0;
+        if(this.isBlocked)add=999;
+        return Math.abs(this.x-node.x)+Math.abs(this.y- node.y)+add;
+    }
 }

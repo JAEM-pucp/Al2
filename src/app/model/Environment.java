@@ -66,6 +66,10 @@ public class Environment {
     }
 
     public Node GetNode(int x, int y){
+        if(x>this.width)return null;
+        if(y>this.height)return null;
+        if(x<0)return null;
+        if(y<0)return null;
         return this.vertex.get(x+y*(this.width+1));
     }
 
@@ -103,5 +107,10 @@ public class Environment {
             environment.vehicles.add(vehicle);
         }
         return environment;
+    }
+
+    public int SetBlockage(int x, int y){
+        this.GetNode(x,y).isBlocked=true;
+        return 1;
     }
 }
