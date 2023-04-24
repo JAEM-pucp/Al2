@@ -9,6 +9,7 @@ public class Request {
     public int y;
     public int load;
     public int coveredLoad;
+    public int tripsLeft;
     public int timeWindow;
     public LocalDateTime startTime;
 
@@ -24,6 +25,7 @@ public class Request {
         this.timeWindow = timeWindow;
         this.startTime = startTime;
         this.coveredLoad = 0;
+        this.tripsLeft = 0;
     }
 
     public Request CopyRequest(){
@@ -35,6 +37,7 @@ public class Request {
         request.timeWindow = this.timeWindow;
         request.startTime = this.startTime;
         request.coveredLoad = this.coveredLoad;
+        request.tripsLeft = this.tripsLeft;
         return request;
     }
 }

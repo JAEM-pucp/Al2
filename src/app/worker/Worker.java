@@ -45,9 +45,11 @@ public class Worker {
                                 input.previousSolution.routes.get(i).stops.remove(0);
                             }
                             if(input.previousSolution.routes.get(i).nodes.get(0).isRequest){
-                                expNum+=(ChronoUnit.MINUTES.between(input.environment.GetRequest(input.previousSolution.routes.get(i).nodes.get(0).x,input.previousSolution.routes.get(i).nodes.get(0).y).startTime,currentTime));
-                                //expNumAmount++;
-                                input.environment.RemoveRequest(input.previousSolution.routes.get(i).nodes.get(0).x,input.previousSolution.routes.get(i).nodes.get(0).y);
+                                input.environment.GetRequest(input.previousSolution.routes.get(i).nodes.get(0).x,input.previousSolution.routes.get(i).nodes.get(0).y).tripsLeft--;
+                                if(input.environment.GetRequest(input.previousSolution.routes.get(i).nodes.get(0).x,input.previousSolution.routes.get(i).nodes.get(0).y).tripsLeft==0){
+                                    expNum+=(ChronoUnit.MINUTES.between(input.environment.GetRequest(input.previousSolution.routes.get(i).nodes.get(0).x,input.previousSolution.routes.get(i).nodes.get(0).y).startTime,currentTime));
+                                    input.environment.RemoveRequest(input.previousSolution.routes.get(i).nodes.get(0).x,input.previousSolution.routes.get(i).nodes.get(0).y);
+                                }
                             }
                             input.previousSolution.routes.get(i).nodes.remove(0);
                             if(input.previousSolution.routes.get(i).nodes.size()==0){

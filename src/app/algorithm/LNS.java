@@ -75,6 +75,7 @@ public class LNS {
     }
 
     public Solution ConstructInitialSolution(Environment environment, LocalDateTime currentTime){
+        int availableCapacity;
         Solution solution = new Solution(environment);
         Route newRoute;
         boolean noChanges=false;
@@ -93,13 +94,25 @@ public class LNS {
             //for each route
             for(int i=0;i<availableRoutes.size();i++){
                 //insert request in route if feasible
-                newRoute = this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment,currentTime);
-                if(newRoute!=null && newRoute.IsFeasible(environment)){
-                    availableRoutes.get(i).CopyFrom(newRoute,environment);
-                    availableRoutes.get(i).vehicle.load+=unrouted.get(0).load;
-                    unrouted.remove(0);
-                    if(unrouted.size()==0)break;
+                availableCapacity = solution.routes.get(i).vehicle.capacity-solution.routes.get(i).vehicle.load;
+                if (availableCapacity > 0) {
+                    newRoute = this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment,currentTime);
+                    if(newRoute!=null && newRoute.IsFeasible(environment)){
+                        availableRoutes.get(i).CopyFrom(newRoute,environment);
+                        unrouted.get(0).tripsLeft++;
+                        if(unrouted.get(0).load-unrouted.get(0).coveredLoad<=availableCapacity){
+                            availableRoutes.get(i).vehicle.load+=unrouted.get(0).load-unrouted.get(0).coveredLoad;
+                            unrouted.get(0).coveredLoad=unrouted.get(0).load;
+                            unrouted.remove(0);
+                        }
+                        else{
+                            unrouted.get(0).coveredLoad=availableCapacity;
+                            availableRoutes.get(i).vehicle.load+=availableRoutes.get(i).vehicle.capacity;
+                        }
+                        if(unrouted.size()==0)break;
+                    }
                 }
+
             }
         }
         solution.unrouted.addAll(unrouted);
@@ -132,8 +145,9 @@ public class LNS {
 
     //repair can modify input with no problem
     public Solution Repair(Solution solution, Environment environment, LocalDateTime currentTime){
+        int availableCapacity=0;
         int chosenRequest = 0;
-        float bestScore = 9999;
+        float bestScore;
         float newScore;
         int insertLocation;
         boolean insertionWasPossible=true;
@@ -144,25 +158,37 @@ public class LNS {
             insertionWasPossible=false;
             //for each route
             for (int i = 0; i < solution.routes.size(); i++) {
+                availableCapacity = solution.routes.get(i).vehicle.capacity-solution.routes.get(i).vehicle.load;
                 bestScore = 9999;
                 bestRoute = solution.routes.get(i);
                 //find the best unrouted candidate to be inserted
                 for (int j = 0; j < solution.unrouted.size(); j++) {
-                    //insert request shouldn't modify input
-                    newRoute = InsertRequest(solution.unrouted.get(j), solution.routes.get(i), environment,currentTime);
-                    //compare and update
-                    if(newRoute!=null) {
-                        newScore = newRoute.EvaluateRoute(environment, currentTime);
-                        if (newRoute.GetRequestAmount() > bestRoute.GetRequestAmount()) {
-                            bestScore = newScore;
-                            bestRoute = newRoute;
-                            chosenRequest = j;
+                    if(availableCapacity>0){
+                        //insert request shouldn't modify input
+                        newRoute = InsertRequest(solution.unrouted.get(j), solution.routes.get(i), environment,currentTime);
+                        //compare and update
+                        if(newRoute!=null) {
+                            newScore = newRoute.EvaluateRoute(environment, currentTime);
+                            if (newRoute.GetRequestAmount() > bestRoute.GetRequestAmount()) {
+                                bestScore = newScore;
+                                bestRoute = newRoute;
+                                chosenRequest = j;
+                            }
                         }
                     }
                 }
                 if (solution.routes.get(i).GetRequestAmount() < bestRoute.GetRequestAmount() && bestRoute.IsFeasible(environment)) {
                     solution.routes.get(i).CopyFrom(bestRoute,environment);
-                    solution.unrouted.remove(chosenRequest);
+                    solution.unrouted.get(chosenRequest).tripsLeft++;
+                    if(solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad<=availableCapacity){
+                        solution.routes.get(i).vehicle.load+=solution.unrouted.get(0).load-solution.unrouted.get(0).coveredLoad;
+                        solution.unrouted.get(chosenRequest).coveredLoad=solution.unrouted.get(chosenRequest).load;
+                        solution.unrouted.remove(chosenRequest);
+                    }
+                    else{
+                        solution.routes.get(i).vehicle.load+=solution.routes.get(i).vehicle.capacity;
+                        solution.unrouted.get(chosenRequest).coveredLoad=availableCapacity;
+                    }
                     if(solution.unrouted.size()==0)break;
                 }
             }
@@ -276,7 +302,12 @@ public class LNS {
             nodes.remove(nodes.size()-1);
             nodes.addAll(this.CalculateRoute(newEnvironment.GetNode(newRequestToInsert.x, newRequestToInsert.y),newRoute.stops.get(stopsIndex+1),newEnvironment));
             newRoute.nodes.addAll(positionToInsert,nodes);
-            newRoute.vehicle.load+=newRequestToInsert.load;
+            if(newRequestToInsert.load<=newRoute.vehicle.capacity-newRoute.vehicle.load) {
+                newRoute.vehicle.load += newRequestToInsert.load;
+            }
+            else{
+                newRoute.vehicle.load = newRoute.vehicle.capacity;
+            }
             newRoute.stops.add(stopsIndex+1,newEnvironment.GetNode(newRequestToInsert.x, newRequestToInsert.y));
         }
         return newRoute;
@@ -317,6 +348,8 @@ public class LNS {
         route.nodes.addAll(positionAtNodes,trip);
         route.stops.remove(positionAtStops);
         route.vehicle.load-=request.load;
+        request.tripsLeft=0;
+        request.coveredLoad=0;
 
         if(!route.stops.get(0).isRequest && !route.stops.get(0).isDepot){
             route.stops.remove(0);

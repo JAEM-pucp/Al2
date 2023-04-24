@@ -87,9 +87,9 @@ public class Route {
                 if(stopIndex==this.stops.size()-1)break;
             }
         }
-        if(totalLoad>this.vehicle.capacity){
+        /*if(totalLoad>this.vehicle.capacity){
             isFeasible = false;
-        }
+        }*/
         return isFeasible;
     }
 
