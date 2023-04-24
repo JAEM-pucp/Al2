@@ -3,38 +3,79 @@ package app.model;
 import java.util.ArrayList;
 
 public class Environment {
-    public ArrayList<Node> vertex;
     public int width;
     public int height;
+    public ArrayList<Node> vertex;
     public ArrayList<Vehicle> vehicles;
-    public int carTotal;
-    public int carAvailable;
-    public int carInUse;
-    public int bikeTotal;
-    public int bikeAvailable;
-    public int bikeInUse;
-    public Node depot;
+    public ArrayList<Request> requests;
     public Environment(){
         this.vertex = new ArrayList<>();
         this.vehicles = new ArrayList<>();
+        this.requests = new ArrayList<>();
     }
 
-    public Environment(int width, int height, int carTotal, int carAvailable, int carInUse, int bikeTotal, int bikeAvailable, int bikeInUse) {
+    public Environment CopyEnvironment(){
+        Environment environment = new Environment();
+        environment.width = this.width;
+        environment.height = this.height;
+        for(int i=0;i<this.vertex.size();i++){
+            environment.vertex.add(this.vertex.get(i).CopyNode());
+        }
+        for(int i=0;i<this.vehicles.size();i++){
+            environment.vehicles.add(this.vehicles.get(i).CopyVehicle());
+        }
+        for(int i=0;i<this.requests.size();i++){
+            environment.requests.add(this.requests.get(i).CopyRequest());
+        }
+        return environment;
+    }
+
+    public int GetAvailableVehicleAmount(){
+        int availableAmount = 0;
+        for(int i=0;i<this.vehicles.size();i++){
+            if(this.vehicles.get(i).isAvailable){
+                availableAmount++;
+            }
+        }
+        return availableAmount;
+    }
+
+    public ArrayList<Vehicle> GetAvailableVehicles(){
+        ArrayList<Vehicle> vehicles = new ArrayList<>();
+        for(int i=0;i<this.vehicles.size();i++){
+            if(this.vehicles.get(i).isAvailable){
+                vehicles.add(this.vehicles.get(i));
+            }
+        }
+        return vehicles;
+    }
+
+    public Request GetRequest(int x, int y){
+        for(int i=0;i<this.requests.size();i++){
+            if(x==this.requests.get(i).x && y==this.requests.get(i).y){
+                return this.requests.get(i);
+            }
+        }
+        return null;
+    }
+
+    public Node GetDepot(){
+        for(int i=0; i<this.vertex.size();i++){
+            if(this.vertex.get(i).isDepot){
+                return this.vertex.get(i);
+            }
+        }
+        return null;
+    }
+
+    public Environment(int width, int height, int carTotal, int bikeTotal) {
         this.width = width;
         this.height = height;
-        this.carTotal = carTotal;
-        this.carAvailable = carAvailable;
-        this.carInUse = carInUse;
-        this.bikeTotal = bikeTotal;
-        this.bikeAvailable = bikeAvailable;
-        this.bikeInUse = bikeInUse;
         this.vertex = new ArrayList<>();
         this.vehicles = new ArrayList<>();
     }
 
     public Environment(int width, int height, int depotX, int depotY, int carTotal, int carCapacity, int carSpeed, int carCost, int bikeTotal, int bikeCapacity, int bikeSpeed, int bikeCost) {
-        this.carTotal=carTotal;
-        this.bikeTotal=bikeTotal;
         this.width=width;
         this.height=height;
         this.vehicles = new ArrayList<>();
@@ -56,7 +97,6 @@ public class Environment {
                 node = new Node(x,y,false,false,false);
                 if(depotX==x && depotY==y){
                     node.isDepot=true;
-                    this.depot = node;
                 }
                 this.vertex.add(node);
                 //   0,0 1,0 2,0 0,1 1,1 2,1
@@ -81,34 +121,15 @@ public class Environment {
         return vehicle;
     }
 
-    public Environment CopyEnvironment(ArrayList<Request> requests){
-        Environment environment = new Environment(this.width,this.height,this.carTotal,this.carAvailable
-                ,this.carInUse,this.bikeTotal,this.bikeAvailable,this.bikeInUse);
-        Node node;
-        Request request;
-        Vehicle vehicle;
-        for(int i=0;i<this.vertex.size();i++){
-            node = new Node(this.vertex.get(i).x,this.vertex.get(i).y,this.vertex.get(i).isDepot
-                    ,this.vertex.get(i).isBlocked,this.vertex.get(i).isRequest);
-            if(node.isDepot){
-                environment.depot=node;
-            }
-            environment.vertex.add(node);
-        }
-        for(int i=0;i< requests.size();i++){
-            request= new Request(environment.GetNode(requests.get(i).destination.x,requests.get(i).destination.y)
-                    ,requests.get(i).load,requests.get(i).insertionCost,requests.get(i).timeWindow
-                    ,requests.get(i).duration,requests.get(i).distance,requests.get(i).id);
-            environment.GetNode(requests.get(i).destination.x,requests.get(i).destination.y).request=request;
-        }
+    public int GetCarTotal(){
+        int counter=0;
         for(int i=0;i<this.vehicles.size();i++){
-            vehicle = new Vehicle(this.vehicles.get(i).type,this.vehicles.get(i).capacity,this.vehicles.get(i).speed
-                    ,this.vehicles.get(i).cost,this.vehicles.get(i).load,this.vehicles.get(i).id);
-            environment.vehicles.add(vehicle);
+            if(this.vehicles.get(i).type=='c'){
+                counter++;
+            }
         }
-        return environment;
+        return counter;
     }
-
     public int SetBlockage(int x, int y){
         this.GetNode(x,y).isBlocked=true;
         return 1;

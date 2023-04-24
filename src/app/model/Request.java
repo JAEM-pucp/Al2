@@ -4,50 +4,34 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class Request {
-    public Node destination;
-    public int load;
-    public ArrayList<LocalDateTime> originTimeWindow;
-    public ArrayList<LocalDateTime> destinationTimeWindow;
-    public boolean isActive;
-    public int insertionCost;
-    public int timeWindow;
-    public int duration;
-    public int distance;
     public int id;
+    public int x;
+    public int y;
+    public int load;
+    public int timeWindow;
+    public LocalDateTime startTime;
 
     public Request(){
-        this.destination = new Node();
-        this.originTimeWindow = new ArrayList<>();
-        this.destinationTimeWindow = new ArrayList<>();
-        this.isActive = false;
-        this.insertionCost=99999;
+
     }
 
-    public Request(Node destination, int load, int timeWindow, int id) {
-        this.destination = destination;
+    public Request(int id, int x, int y, int load, int timeWindow, LocalDateTime startTime) {
+        this.id = id;
+        this.x = x;
+        this.y = y;
         this.load = load;
         this.timeWindow = timeWindow;
-        this.isActive = false;
-        this.insertionCost=99999;
-        this.id = id;
+        this.startTime = startTime;
     }
 
-    public Request(Node destination, int load, int insertionCost, int timeWindow, int duration, int distance, int id) {
-        this.destination = destination;
-        this.load = load;
-        this.insertionCost = insertionCost;
-        this.timeWindow = timeWindow;
-        this.duration = duration;
-        this.distance = distance;
-        this.id = id;
-    }
-
-    public Request CopyRequest(Environment environment){
-        Request request = new Request(this.destination,this.load,this.insertionCost,this.timeWindow,this.duration
-                ,this.distance,this.id);
-
-        request.destination=environment.GetNode(this.destination.x,this.destination.y);
-
+    public Request CopyRequest(){
+        Request request = new Request();
+        request.id = this.id;
+        request.x = this.x;
+        request.y = this.y;
+        request.load = this.load;
+        request.timeWindow = this.timeWindow;
+        request.startTime = this.startTime;
         return request;
     }
 }

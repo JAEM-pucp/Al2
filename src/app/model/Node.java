@@ -6,9 +6,18 @@ public class Node {
     public boolean isDepot;
     public boolean isBlocked;
     public boolean isRequest;
-    public Request request;
 
     public Node() {
+    }
+
+    public Node CopyNode(){
+        Node node = new Node();
+        node.x = this.x;
+        node.y = this.y;
+        node.isDepot = this.isDepot;
+        node.isBlocked = this.isBlocked;
+        node.isRequest = this.isRequest;
+        return node;
     }
     public Node(int x, int y, boolean isDepot, boolean isBlocked, boolean isRequest) {
         this.x = x;
@@ -16,7 +25,6 @@ public class Node {
         this.isDepot = isDepot;
         this.isBlocked = isBlocked;
         this.isRequest = isRequest;
-        this.request = null;
     }
 
     public int CalculateCost(Node node){
