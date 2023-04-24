@@ -97,7 +97,7 @@ public class LNS {
                 availableCapacity = solution.routes.get(i).vehicle.capacity-solution.routes.get(i).vehicle.load;
                 if (availableCapacity > 0) {
                     newRoute = this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment,currentTime);
-                    if(newRoute!=null && newRoute.IsFeasible(environment)){
+                    if(newRoute!=null && newRoute.IsFeasible(currentTime,environment)){
                         availableRoutes.get(i).CopyFrom(newRoute,environment);
                         unrouted.get(0).tripsLeft++;
                         if(unrouted.get(0).load-unrouted.get(0).coveredLoad<=availableCapacity){
@@ -177,7 +177,7 @@ public class LNS {
                         }
                     }
                 }
-                if (solution.routes.get(i).GetRequestAmount() < bestRoute.GetRequestAmount() && bestRoute.IsFeasible(environment)) {
+                if (solution.routes.get(i).GetRequestAmount() < bestRoute.GetRequestAmount() && bestRoute.IsFeasible(currentTime,environment)) {
                     solution.routes.get(i).CopyFrom(bestRoute,environment);
                     solution.unrouted.get(chosenRequest).tripsLeft++;
                     if(solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad<=availableCapacity){
@@ -250,10 +250,10 @@ public class LNS {
         for(int i=0;i< keyNodes.size();i++){
             //insert node after key node
             //shouldn't modify inputs
-            insertedRoute = this.InsertRequestAt(newRequest,keyNodes.get(i),newRoute,environment);
+            insertedRoute = this.InsertRequestAt(newRequest,keyNodes.get(i),newRoute,newEnvironment);
             newScore = insertedRoute.EvaluateRoute(environment,currentTime);
             //if(newScore<bestScore && insertedRoute.IsFeasible(newEnvironment)){
-            if(insertedRoute.IsFeasible(newEnvironment)){
+            if(insertedRoute.IsFeasible(currentTime,newEnvironment)){
                 bestScore = newScore;
                 bestRoute = insertedRoute;
                 changes = true;

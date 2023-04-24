@@ -52,21 +52,31 @@ public class Route {
         int stopIndex = 0;
         int totalLoad = 0;
         boolean isFeasible = true;
+        long elapsedTime;
+        long pendingTime;
+        Request request;
+
         for(int i=0;i<this.nodes.size();i++){
-            if(this.nodes.get(i).x==this.stops.get(i).x && this.nodes.get(i).y==this.stops.get(i).y){
+            if(this.nodes.get(i).x==this.stops.get(stopIndex).x && this.nodes.get(i).y==this.stops.get(stopIndex).y){
                 stopIndex++;
                 if(this.nodes.get(i).isRequest){
-                    totalLoad+=environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).load;
+                    //totalLoad+=environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).load;
                     //
-                    if((int)ChronoUnit.MINUTES.between(environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).startTime,currentTime)+(int)((float)i*60/(float)this.vehicle.speed)>environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).timeWindow){
+                    elapsedTime=ChronoUnit.MINUTES.between(environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).startTime,currentTime);
+                    pendingTime=(i*60)/this.vehicle.speed;
+                    request = environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y);
+                    if(elapsedTime+pendingTime>request.timeWindow*60){
                         isFeasible = false;
                     }
                 }
+                if(stopIndex==this.stops.size()){
+                    break;
+                }
             }
         }
-        if(totalLoad>this.vehicle.load){
+        /*if(totalLoad>this.vehicle.load){
             isFeasible = false;
-        }
+        }*/
         return isFeasible;
     }
 
