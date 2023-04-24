@@ -79,6 +79,7 @@ public class Environment {
         this.width=width;
         this.height=height;
         this.vehicles = new ArrayList<>();
+        this.requests = new ArrayList<>();
         Vehicle vehicle;
         for(int i=0;i<bikeTotal;i++){
             vehicle = new Vehicle('b',bikeCapacity,bikeSpeed,bikeCost,i);
@@ -133,5 +134,13 @@ public class Environment {
     public int SetBlockage(int x, int y){
         this.GetNode(x,y).isBlocked=true;
         return 1;
+    }
+
+    public void RemoveRequest(int x, int y){
+        for(int i=0;i<this.requests.size();i++){
+            if(this.requests.get(i).x == x && this.requests.get(i).y == y){
+                this.requests.remove(i);
+            }
+        }
     }
 }

@@ -16,6 +16,8 @@ public class LNS {
     }
 
     public Output Solve(Input input){
+        int unroutedAmount=0;
+        int bestUnroutedAmount =0;
         Output output = new Output();
         Solution bestSolution;
         Environment bestEnvironment;
@@ -38,6 +40,7 @@ public class LNS {
         bestScore = initialSolution.CalculateScore(input.environment,input.currentTime);
         bestSolution = initialSolution;
         bestEnvironment = input.environment;
+        bestUnroutedAmount = initialSolution.unrouted.size();
         //run LNS n number of times
         while(iterations<n){
             //copy environment
@@ -52,8 +55,13 @@ public class LNS {
             this.Repair(newSolution,newEnvironment,input.currentTime);
             //calculate the score of the new solution
             newScore = newSolution.CalculateScore(newEnvironment,input.currentTime);
+            if(newSolution.unrouted.size()<bestUnroutedAmount){
+                bestScore = newScore;
+                bestSolution = newSolution;
+                bestEnvironment = newEnvironment;
+            }
             //compare and update if necessary
-            if(newScore<bestScore){
+            if(newSolution.unrouted.size()==bestUnroutedAmount && newScore<bestScore){
                 bestScore = newScore;
                 bestSolution = newSolution;
                 bestEnvironment = newEnvironment;
@@ -143,14 +151,16 @@ public class LNS {
                     //insert request shouldn't modify input
                     newRoute = InsertRequest(solution.unrouted.get(j), solution.routes.get(i), environment,currentTime);
                     //compare and update
-                    newScore = newRoute.EvaluateRoute(environment,currentTime);
-                    if(newScore<bestScore){
-                        bestScore = newScore;
-                        bestRoute = newRoute;
-                        chosenRequest = j;
+                    if(newRoute!=null) {
+                        newScore = newRoute.EvaluateRoute(environment, currentTime);
+                        if (newRoute.GetRequestAmount() > bestRoute.GetRequestAmount()) {
+                            bestScore = newScore;
+                            bestRoute = newRoute;
+                            chosenRequest = j;
+                        }
                     }
                 }
-                if (bestRoute.IsFeasible(environment)) {
+                if (solution.routes.get(i).GetRequestAmount() < bestRoute.GetRequestAmount() && bestRoute.IsFeasible(environment)) {
                     solution.routes.get(i).CopyFrom(bestRoute,environment);
                     solution.unrouted.remove(chosenRequest);
                     if(solution.unrouted.size()==0)break;
@@ -207,7 +217,7 @@ public class LNS {
             loadLimit = newRoute.vehicle.load;
         }
         //calculate score to compare to
-        bestScore = 9999;
+        bestScore = route.EvaluateRoute(environment,currentTime);
         //get the key nodes, these will stay in the new routes
         keyNodes = newRoute.GetKeyNodes();
         //for each key node
@@ -216,7 +226,8 @@ public class LNS {
             //shouldn't modify inputs
             insertedRoute = this.InsertRequestAt(newRequest,keyNodes.get(i),newRoute,environment);
             newScore = insertedRoute.EvaluateRoute(environment,currentTime);
-            if(newScore<bestScore && insertedRoute.IsFeasible(newEnvironment)){
+            //if(newScore<bestScore && insertedRoute.IsFeasible(newEnvironment)){
+            if(insertedRoute.IsFeasible(newEnvironment)){
                 bestScore = newScore;
                 bestRoute = insertedRoute;
                 changes = true;

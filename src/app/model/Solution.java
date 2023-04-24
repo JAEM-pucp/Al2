@@ -69,4 +69,14 @@ public class Solution {
 
         return costAvg/this.routes.size();
     }
+
+    public boolean IsActive(){
+        boolean isActive = false;
+        for(int i=0;i<this.routes.size();i++){
+            if(this.routes.get(i).startTime!=null){
+                isActive = true;
+            }
+        }
+        return isActive;
+    }
 }

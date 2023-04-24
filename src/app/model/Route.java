@@ -8,10 +8,12 @@ public class Route {
     public ArrayList<Node> nodes;
     public ArrayList<Node> stops;
     public Vehicle vehicle;
+    public LocalDateTime startTime;
 
     public Route() {
         this.nodes = new ArrayList<>();
         this.stops = new ArrayList<>();
+        this.startTime = null;
     }
     public Route(Node depot, Vehicle vehicle) {
         this.nodes = new ArrayList<>();
@@ -21,6 +23,7 @@ public class Route {
         this.stops.add(depot);
         this.stops.add(depot);
         this.vehicle = vehicle;
+        this.startTime = null;
     }
     public Route CopyRoute(Environment environment){
         Route route = new Route();
@@ -31,6 +34,7 @@ public class Route {
             route.stops.add(environment.GetNode(this.stops.get(i).x,this.stops.get(i).y));
         }
         route.vehicle = environment.GetVehicle(this.vehicle.id);
+        route.startTime = this.startTime;
         return route;
     }
 
@@ -99,6 +103,7 @@ public class Route {
             this.stops.add(environment.GetNode(route.stops.get(i).x,route.stops.get(i).y));
         }
         this.vehicle = environment.GetVehicle(route.vehicle.id);
+        this.startTime = route.startTime;
         return 1;
     }
     public int GetRequestAmount(){
