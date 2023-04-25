@@ -26,6 +26,7 @@ public class LNS {
         ArrayList<Request> unrouted;
         Solution newSolution;
         Environment newEnvironment;
+        Environment initialEnvironment;
         int iterations = 0;
         int n = 10;
         Solution initialSolution;
@@ -41,10 +42,11 @@ public class LNS {
         bestSolution = initialSolution;
         bestEnvironment = input.environment;
         bestUnroutedAmount = initialSolution.unrouted.size();
+        initialEnvironment = bestEnvironment;
         //run LNS n number of times
         while(iterations<n){
             //copy environment
-            newEnvironment = input.environment.CopyEnvironment();
+            newEnvironment = initialEnvironment.CopyEnvironment();
             //copy solution
             newSolution = initialSolution.CopySolution(newEnvironment);
             //destroy new solution and store the unrouted requests
@@ -59,12 +61,17 @@ public class LNS {
                 bestScore = newScore;
                 bestSolution = newSolution;
                 bestEnvironment = newEnvironment;
+                bestUnroutedAmount = newSolution.unrouted.size();
+                initialSolution = newSolution;
+                initialEnvironment = newEnvironment;
             }
             //compare and update if necessary
             if(newSolution.unrouted.size()==bestUnroutedAmount && newScore<bestScore){
                 bestScore = newScore;
                 bestSolution = newSolution;
                 bestEnvironment = newEnvironment;
+                initialSolution = newSolution;
+                initialEnvironment = newEnvironment;
             }
             //increase counter
             iterations++;
@@ -79,6 +86,7 @@ public class LNS {
         Solution solution = new Solution(environment);
         Route newRoute;
         boolean noChanges=false;
+        int j;
         Node depot = environment.GetDepot();
         ArrayList<Route> availableRoutes;
         //copy the requests
@@ -96,21 +104,50 @@ public class LNS {
                 //insert request in route if feasible
                 availableCapacity = solution.routes.get(i).vehicle.capacity-solution.routes.get(i).vehicle.load;
                 if (availableCapacity > 0) {
+                    j=0;
+                    while(j<unrouted.size()){
+                        newRoute = this.InsertRequest(unrouted.get(j),availableRoutes.get(i),environment,currentTime);
+                        if(newRoute.IsFeasible(currentTime,environment)){
+                            availableRoutes.get(i).CopyFrom(newRoute,environment);
+
+                            if(unrouted.get(j).load-unrouted.get(j).coveredLoad<=availableCapacity){
+                                availableRoutes.get(i).vehicle.AddRequestLoad(unrouted.get(j).x,unrouted.get(j).y,unrouted.get(j).load-unrouted.get(j).coveredLoad);
+                                unrouted.get(j).coveredLoad=unrouted.get(j).load;
+                                availableCapacity-=availableRoutes.get(i).vehicle.GetRequestLoad(unrouted.get(j).x,unrouted.get(j).y);
+                                availableRoutes.get(i).vehicle.load+=availableRoutes.get(i).vehicle.GetRequestLoad(unrouted.get(j).x,unrouted.get(j).y);
+
+                                unrouted.remove(j);
+                            }
+                            else{
+                                availableRoutes.get(i).vehicle.AddRequestLoad(unrouted.get(j).x,unrouted.get(j).y,availableCapacity);
+                                unrouted.get(j).coveredLoad+=availableCapacity;
+                                availableCapacity=0;
+                                availableRoutes.get(i).vehicle.load=availableRoutes.get(i).vehicle.capacity;
+                            }
+                        }
+                        else{
+                            j++;
+                        }
+                        if(availableCapacity==0)break;
+                    }
+                    /*
                     newRoute = this.InsertRequest(unrouted.get(0),solution.routes.get(i),environment,currentTime);
                     if(newRoute!=null && newRoute.IsFeasible(currentTime,environment)){
                         availableRoutes.get(i).CopyFrom(newRoute,environment);
                         unrouted.get(0).tripsLeft++;
                         if(unrouted.get(0).load-unrouted.get(0).coveredLoad<=availableCapacity){
                             availableRoutes.get(i).vehicle.load+=unrouted.get(0).load-unrouted.get(0).coveredLoad;
+                            availableRoutes.get(i).vehicle.AddRequestLoad(unrouted.get(0).x,unrouted.get(0).y,unrouted.get(0).load-unrouted.get(0).coveredLoad);
                             unrouted.get(0).coveredLoad=unrouted.get(0).load;
                             unrouted.remove(0);
                         }
                         else{
+                            availableRoutes.get(i).vehicle.AddRequestLoad(unrouted.get(0).x,unrouted.get(0).y,availableCapacity);
                             unrouted.get(0).coveredLoad=availableCapacity;
                             availableRoutes.get(i).vehicle.load+=availableRoutes.get(i).vehicle.capacity;
                         }
                         if(unrouted.size()==0)break;
-                    }
+                    }*/
                 }
 
             }
@@ -124,6 +161,7 @@ public class LNS {
         Random random = new Random();
         ArrayList<Request> requests;
         ArrayList<Request> unrouted = new ArrayList<>();
+        int result;
         int eliminated=0;
         int requestAmount = solution.GetRequestAmount();
         while(eliminated< requestAmount/2) {
@@ -131,10 +169,12 @@ public class LNS {
                 requests = solution.routes.get(i).GetRequests(environment);
                 for (int j = 0; j < requests.size(); j++) {
                     if (random.nextBoolean()) {
-                        this.RemoveRequest(requests.get(j),solution.routes.get(i),environment);
-                        unrouted.add(requests.get(j));
-                        eliminated++;
-                        if(eliminated>= requestAmount/2)break;
+                        result = this.RemoveRequest(requests.get(j),solution.routes.get(i),environment);
+                        if(result==1) {
+                            unrouted.add(requests.get(j));
+                            eliminated++;
+                            if (eliminated >= requestAmount / 2) break;
+                        }
                     }
                 }
                 if(eliminated>= requestAmount/2)break;
@@ -181,12 +221,14 @@ public class LNS {
                     solution.routes.get(i).CopyFrom(bestRoute,environment);
                     solution.unrouted.get(chosenRequest).tripsLeft++;
                     if(solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad<=availableCapacity){
-                        solution.routes.get(i).vehicle.load+=solution.unrouted.get(0).load-solution.unrouted.get(0).coveredLoad;
+                        solution.routes.get(i).vehicle.load+=solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad;
+                        solution.routes.get(i).vehicle.AddRequestLoad(solution.unrouted.get(chosenRequest).x,solution.unrouted.get(chosenRequest).y,solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad);
                         solution.unrouted.get(chosenRequest).coveredLoad=solution.unrouted.get(chosenRequest).load;
                         solution.unrouted.remove(chosenRequest);
                     }
                     else{
-                        solution.routes.get(i).vehicle.load+=solution.routes.get(i).vehicle.capacity;
+                        solution.routes.get(i).vehicle.AddRequestLoad(solution.unrouted.get(chosenRequest).x,solution.unrouted.get(chosenRequest).y,availableCapacity);
+                        solution.routes.get(i).vehicle.load=solution.routes.get(i).vehicle.capacity;
                         solution.unrouted.get(chosenRequest).coveredLoad=availableCapacity;
                     }
                     if(solution.unrouted.size()==0)break;
@@ -250,13 +292,18 @@ public class LNS {
         for(int i=0;i< keyNodes.size();i++){
             //insert node after key node
             //shouldn't modify inputs
-            insertedRoute = this.InsertRequestAt(newRequest,keyNodes.get(i),newRoute,newEnvironment);
-            newScore = insertedRoute.EvaluateRoute(environment,currentTime);
-            //if(newScore<bestScore && insertedRoute.IsFeasible(newEnvironment)){
-            if(insertedRoute.IsFeasible(currentTime,newEnvironment)){
-                bestScore = newScore;
-                bestRoute = insertedRoute;
-                changes = true;
+            if(newRequest.x==keyNodes.get(i).x && newRequest.y==keyNodes.get(i).y){
+                return newRoute;
+            }
+            else {
+                insertedRoute = this.InsertRequestAt(newRequest, keyNodes.get(i), newRoute, newEnvironment);
+                newScore = insertedRoute.EvaluateRoute(environment, currentTime);
+                //if(newScore<bestScore && insertedRoute.IsFeasible(newEnvironment)){
+                if (bestRoute.stops.size() <= insertedRoute.stops.size() && insertedRoute.IsFeasible(currentTime, newEnvironment)) {
+                    bestScore = newScore;
+                    bestRoute = insertedRoute;
+                    changes = true;
+                }
             }
         }
         if(!changes) return null;
@@ -275,6 +322,10 @@ public class LNS {
         Environment newEnvironment = environment.CopyEnvironment();
         //make a copy of the route
         Route newRoute = route.CopyRoute(newEnvironment);
+        //if the request is already partially serviced in the route
+        if(previousStop.x==requestToInsert.x && previousStop.y==requestToInsert.y){
+            return newRoute;
+        }
         //take the request from the new environment
         Request newRequestToInsert = newEnvironment.GetRequest(requestToInsert.x, requestToInsert.y);
         Node newPreviousStop = newEnvironment.GetNode(previousStop.x, previousStop.y);
@@ -302,12 +353,12 @@ public class LNS {
             nodes.remove(nodes.size()-1);
             nodes.addAll(this.CalculateRoute(newEnvironment.GetNode(newRequestToInsert.x, newRequestToInsert.y),newRoute.stops.get(stopsIndex+1),newEnvironment));
             newRoute.nodes.addAll(positionToInsert,nodes);
-            if(newRequestToInsert.load<=newRoute.vehicle.capacity-newRoute.vehicle.load) {
+            /*if(newRequestToInsert.load<=newRoute.vehicle.capacity-newRoute.vehicle.load) {
                 newRoute.vehicle.load += newRequestToInsert.load;
             }
             else{
                 newRoute.vehicle.load = newRoute.vehicle.capacity;
-            }
+            }*/
             newRoute.stops.add(stopsIndex+1,newEnvironment.GetNode(newRequestToInsert.x, newRequestToInsert.y));
         }
         return newRoute;
@@ -332,6 +383,8 @@ public class LNS {
             }
         }
 
+        if(positionAtStops==0)return 0;
+        //for each node
         for(int i=0;i<route.nodes.size();i++){
             if(route.nodes.get(i).x==route.stops.get(positionAtStops-1).x && route.nodes.get(i).y==route.stops.get(positionAtStops-1).y){
                 do {
@@ -347,7 +400,8 @@ public class LNS {
         trip = this.CalculateRoute(route.stops.get(positionAtStops-1),route.stops.get(positionAtStops+1),environment);
         route.nodes.addAll(positionAtNodes,trip);
         route.stops.remove(positionAtStops);
-        route.vehicle.load-=request.load;
+        route.vehicle.load-=route.vehicle.GetRequestLoad(request.x,request.y);
+        route.vehicle.RemoveRequestLoad(request.x,request.y);
         request.tripsLeft=0;
         request.coveredLoad=0;
 

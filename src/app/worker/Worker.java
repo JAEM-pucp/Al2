@@ -18,8 +18,8 @@ import java.util.Scanner;
 public class Worker {
     public void Simulate(){
         LocalDateTime currentTime = LocalDateTime.of(2023, Month.APRIL, 12, 0, 0);
-        Environment environment;
-        environment = new Environment(70, 50, 45, 30, 4, 25, 30, 5, 6, 4, 60, 3);
+        Environment environment;//25 4
+        environment = new Environment(70, 50, 45, 30, 20, 40, 30, 5, 40, 100, 60, 3);
         environment.SetBlockage(44,30);
         LNS lns = new LNS();
         ArrayList<Request> requests = new ArrayList<>();
@@ -53,23 +53,28 @@ public class Worker {
             System.out.println("Current time: " + currentTime.format(formatter));
             input.currentTime = currentTime;
             if(started){
+                //for each route
                 for(int i=0;i<input.previousSolution.routes.size();i++){
+                    //if the route is active
                     if(input.previousSolution.routes.get(i).startTime!=null){
+                        //if it's their turn to move
                         if(ChronoUnit.MINUTES.between(input.previousSolution.routes.get(i).startTime,currentTime)%(60/input.previousSolution.routes.get(i).vehicle.speed)==0){
                             //move one node
+                            //if the node was a stop, remove from stops
                             if(input.previousSolution.routes.get(i).nodes.get(0).x == input.previousSolution.routes.get(i).stops.get(0).x && input.previousSolution.routes.get(i).nodes.get(0).y == input.previousSolution.routes.get(i).stops.get(0).y){
                                 input.previousSolution.routes.get(i).stops.remove(0);
-                            }
-                            if(input.previousSolution.routes.get(i).nodes.get(0).isRequest){
-                                x=input.previousSolution.routes.get(i).nodes.get(0).x;
-                                y=input.previousSolution.routes.get(i).nodes.get(0).y;
-                                request = input.environment.GetRequest(x,y);
-                                request.tripsLeft--;
-                                if(request.tripsLeft==0){
-                                    expNum+=(ChronoUnit.MINUTES.between(request.startTime,currentTime));
-                                    input.environment.RemoveRequest(x,y);
+                                if(input.previousSolution.routes.get(i).nodes.get(0).isRequest){
+                                    x=input.previousSolution.routes.get(i).nodes.get(0).x;
+                                    y=input.previousSolution.routes.get(i).nodes.get(0).y;
+                                    request = input.environment.GetRequest(x,y);
+                                    request.tripsLeft--;
+                                    if(request.tripsLeft==0){
+                                        expNum+=(ChronoUnit.MINUTES.between(request.startTime,currentTime));
+                                        input.environment.RemoveRequest(x,y);
+                                    }
                                 }
                             }
+
                             input.previousSolution.routes.get(i).nodes.remove(0);
                             if(input.previousSolution.routes.get(i).nodes.size()==0){
                                 input.previousSolution.routes.get(i).startTime=null;

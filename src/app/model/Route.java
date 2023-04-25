@@ -142,7 +142,7 @@ public class Route {
             if(this.nodes.get(i).x==this.stops.get(stopsIndex).x && this.nodes.get(i).y==this.stops.get(stopsIndex).y){
                 stopsIndex++;
                 if(this.nodes.get(i).isRequest){
-                    score+=(float)environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).timeWindow-ChronoUnit.MINUTES.between(environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).startTime,currentTime)+(int)((float)i*60/(float)this.vehicle.speed);
+                    score+=(float)environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).timeWindow-(ChronoUnit.MINUTES.between(environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).startTime,currentTime)+(int)((float)i*60/(float)this.vehicle.speed));
                     requestAmount++;
                 }
                 if(stopsIndex==this.stops.size())break;

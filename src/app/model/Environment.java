@@ -81,13 +81,13 @@ public class Environment {
         this.vehicles = new ArrayList<>();
         this.requests = new ArrayList<>();
         Vehicle vehicle;
-        for(int i=0;i<bikeTotal;i++){
-            vehicle = new Vehicle('b',bikeCapacity,bikeSpeed,bikeCost,i);
-            this.vehicles.add(vehicle);
-        }
 
         for(int i=0;i<carTotal;i++){
-            vehicle = new Vehicle('c',carCapacity,carSpeed,carCost,i+bikeTotal);
+            vehicle = new Vehicle('c',carCapacity,carSpeed,carCost,i);
+            this.vehicles.add(vehicle);
+        }
+        for(int i=0;i<bikeTotal;i++){
+            vehicle = new Vehicle('b',bikeCapacity,bikeSpeed,bikeCost,i+carTotal);
             this.vehicles.add(vehicle);
         }
 
