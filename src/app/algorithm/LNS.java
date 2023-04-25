@@ -28,7 +28,7 @@ public class LNS {
         Environment newEnvironment;
         Environment initialEnvironment;
         int iterations = 0;
-        int n = 10;
+        int n = 1;
         Solution initialSolution;
         //check if algorithm was executed before
         if(input.previousSolution==null){
@@ -161,18 +161,38 @@ public class LNS {
         Random random = new Random();
         ArrayList<Request> requests;
         ArrayList<Request> unrouted = new ArrayList<>();
-        int result;
+        ArrayList<Route> availableRoutes = solution.GetAvailableRoutes();
+        boolean result;
         int eliminated=0;
         int requestAmount = solution.GetRequestAmount();
+
+        //while stop condition not met
         while(eliminated< requestAmount/2) {
-            for (int i = 0; i < solution.routes.size(); i++) {
-                requests = solution.routes.get(i).GetRequests(environment);
+
+            //for every available route
+            for (int i = 0; i < availableRoutes.size(); i++) {
+                requests = availableRoutes.get(i).GetRequests(environment);
+
+                //for every request in the route
                 for (int j = 0; j < requests.size(); j++) {
+
+                    //randomly choose to remove request
                     if (random.nextBoolean()) {
+
+                        //should modify
+                        //nodes, stops, vehicle, covered load
                         result = this.RemoveRequest(requests.get(j),solution.routes.get(i),environment);
-                        if(result==1) {
+
+                        //if it was removed successfully
+                        if(result) {
                             unrouted.add(requests.get(j));
                             eliminated++;
+
+                            //if all requests were removed from the route
+                            if(availableRoutes.get(i).GetRequests(environment).size()==0){
+                                availableRoutes.get(i).startTime = null;
+                            }
+
                             if (eliminated >= requestAmount / 2) break;
                         }
                     }
@@ -183,55 +203,150 @@ public class LNS {
         return unrouted;
     }
 
+    public boolean RemoveRequest(Request request, Route route, Environment environment){
+        int x;
+        int y;
+        int nextStopX=0;
+        int nextStopY=0;
+        int previousStopX=0;
+        int previousStopY=0;
+        int patchIndex = 0;
+        int requestLoad;
+        Node previousStop = new Node();
+        Node nextStop = new Node();
+        ArrayList<Node> trip;
+
+        //if we're already at request, then it can't be removed
+        if(route.nodes.get(0).x == request.x && route.nodes.get(0).y == request.y){
+            return false;
+        }
+
+        //should modify nodes stops vehicles coveredload
+
+        requestLoad = route.vehicle.GetRequestLoad(request.x,request.y);
+
+        request.coveredLoad-=requestLoad;
+        route.vehicle.RemoveRequestLoad(request.x,request.y);
+
+        //temporarily add initial node as first stop if not at depot
+        if(!route.nodes.get(0).isDepot && !route.nodes.get(0).isRequest){
+            route.stops.add(0,route.nodes.get(0));
+        }
+
+        //getting the next and previous stop coordinates and nodes and removing the request from the stops
+        for(int i=1;i<route.stops.size();i++){
+            if(route.stops.get(i).x == request.x && route.stops.get(i).y == request.y){
+                nextStop = route.stops.get(i+1);
+                nextStopX = route.stops.get(i+1).x;
+                nextStopY = route.stops.get(i+1).y;
+                previousStop = route.stops.get(i-1);
+                previousStopX = route.stops.get(i-1).x;
+                previousStopY = route.stops.get(i-1).y;
+                route.stops.remove(i);
+                break;
+            }
+        }
+
+        //removing nodes
+        for(int i=0;i<route.nodes.size();i++){
+            if(route.nodes.get(i).x == previousStopX && route.nodes.get(i).y == previousStopY){
+                patchIndex = i;
+                while(true){
+                    x = route.nodes.get(i).x;
+                    y = route.nodes.get(i).y;
+                    route.nodes.remove(i);
+                    if(x==nextStopX && y==nextStopY){
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+        //calculating patch trip
+        trip = this.CalculateRoute(previousStop,nextStop,environment);
+
+        //inseting patch trip
+        route.nodes.addAll(patchIndex,trip);
+
+        //remove temporary stop
+        if(!route.nodes.get(0).isDepot && !route.nodes.get(0).isRequest){
+            route.stops.remove(0);
+        }
+
+        return true;
+    }
+
     //repair can modify input with no problem
     public Solution Repair(Solution solution, Environment environment, LocalDateTime currentTime){
-        int availableCapacity=0;
-        int chosenRequest = 0;
+        int availableCapacity;
+        int chosenRequestIndex = 0;
+        int requestLoad;
+        int bestRequestLoad = 0;
         float bestScore;
-        float newScore;
-        int insertLocation;
+        float newScore=9999;
+        boolean changes;
         boolean insertionWasPossible=true;
         Route newRoute;
-        Route bestRoute = new Route();
+        Route bestRoute;
+        Request chosenRequest = new Request();
+        ArrayList<Route> availableRoutes = solution.GetAvailableRoutes();
+
         //repair until all requests are covered or no more insertions are possible
         while(insertionWasPossible && solution.unrouted.size()!=0) {
             insertionWasPossible=false;
+
             //for each route
-            for (int i = 0; i < solution.routes.size(); i++) {
-                availableCapacity = solution.routes.get(i).vehicle.capacity-solution.routes.get(i).vehicle.load;
+            for (int i = 0; i < availableRoutes.size(); i++) {
+                availableCapacity = availableRoutes.get(i).vehicle.capacity-availableRoutes.get(i).vehicle.load;
                 bestScore = 9999;
-                bestRoute = solution.routes.get(i);
-                //find the best unrouted candidate to be inserted
-                for (int j = 0; j < solution.unrouted.size(); j++) {
-                    if(availableCapacity>0){
+                bestRoute = availableRoutes.get(i);
+                changes = false;
+
+                //if route can accept requests
+                if(availableCapacity!=0){
+
+                    //find the best unrouted candidate to be inserted
+                    for (int j = 0; j < solution.unrouted.size(); j++) {
+                        if(solution.unrouted.get(j).load - solution.unrouted.get(j).coveredLoad<=availableCapacity) {
+                            requestLoad = solution.unrouted.get(j).load - solution.unrouted.get(j).coveredLoad;
+                        }
+                        else {
+                            requestLoad = availableCapacity;
+                        }
+
+                        //inserts request at its best position in the route
                         //insert request shouldn't modify input
-                        newRoute = InsertRequest(solution.unrouted.get(j), solution.routes.get(i), environment,currentTime);
-                        //compare and update
-                        if(newRoute!=null) {
-                            newScore = newRoute.EvaluateRoute(environment, currentTime);
-                            if (newRoute.GetRequestAmount() > bestRoute.GetRequestAmount()) {
-                                bestScore = newScore;
-                                bestRoute = newRoute;
-                                chosenRequest = j;
-                            }
+                        //outputs modified nodes and stops, checks feasibility
+                        newRoute = InsertRequest(solution.unrouted.get(j), availableRoutes.get(i), environment, currentTime);
+                        if(newRoute != null){
+                            newScore = newRoute.EvaluateRoute(environment,currentTime);
+                        }
+
+                        //update the best result
+                        if (newRoute != null && newScore<bestScore) {
+                            bestScore = newScore;
+                            bestRoute = newRoute;
+                            chosenRequestIndex = j;
+                            chosenRequest = solution.unrouted.get(j);
+                            changes = true;
+                            bestRequestLoad = requestLoad;
+                            insertionWasPossible=true;
                         }
                     }
-                }
-                if (solution.routes.get(i).GetRequestAmount() < bestRoute.GetRequestAmount() && bestRoute.IsFeasible(currentTime,environment)) {
-                    solution.routes.get(i).CopyFrom(bestRoute,environment);
-                    solution.unrouted.get(chosenRequest).tripsLeft++;
-                    if(solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad<=availableCapacity){
-                        solution.routes.get(i).vehicle.load+=solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad;
-                        solution.routes.get(i).vehicle.AddRequestLoad(solution.unrouted.get(chosenRequest).x,solution.unrouted.get(chosenRequest).y,solution.unrouted.get(chosenRequest).load-solution.unrouted.get(chosenRequest).coveredLoad);
-                        solution.unrouted.get(chosenRequest).coveredLoad=solution.unrouted.get(chosenRequest).load;
-                        solution.unrouted.remove(chosenRequest);
+
+                    //copy the best result into the route if changes were made
+                    if(changes){
+                        solution.routes.get(i).CopyFrom(bestRoute,environment);
+                        solution.routes.get(i).vehicle.AddRequestLoad(chosenRequest.x,chosenRequest.y,bestRequestLoad);
+                        solution.routes.get(i).vehicle.load+=bestRequestLoad;
+                        chosenRequest.tripsLeft++;
+                        chosenRequest.coveredLoad+=bestRequestLoad;
+                        if(chosenRequest.load==chosenRequest.coveredLoad){
+                            solution.unrouted.remove(chosenRequestIndex);
+                            if(solution.unrouted.size()==0)break;
+                        }
                     }
-                    else{
-                        solution.routes.get(i).vehicle.AddRequestLoad(solution.unrouted.get(chosenRequest).x,solution.unrouted.get(chosenRequest).y,availableCapacity);
-                        solution.routes.get(i).vehicle.load=solution.routes.get(i).vehicle.capacity;
-                        solution.unrouted.get(chosenRequest).coveredLoad=availableCapacity;
-                    }
-                    if(solution.unrouted.size()==0)break;
                 }
             }
         }
@@ -262,28 +377,29 @@ public class LNS {
         return nodes;
     }
 
-    //shouldn't modify input
+    //inserts request at its best position in the route
+    //insert request shouldn't modify input
+    //outputs modified nodes and stops, checks feasibility
     public Route InsertRequest(Request request, Route route, Environment environment, LocalDateTime currentTime){
         Route bestRoute = route;
         float bestScore;
         float newScore;
         Route insertedRoute;
         ArrayList<Node> keyNodes;
-        int loadLimit;
         boolean changes = false;
+        Environment newEnvironment;
+        Route newRoute;
+        Request newRequest;
+
         //make a copy of the environment
-        Environment newEnvironment = environment.CopyEnvironment();
+        newEnvironment = environment.CopyEnvironment();
+
         //make a copy of the route
-        Route newRoute = route.CopyRoute(newEnvironment);
+        newRoute = route.CopyRoute(newEnvironment);
+
         //take the request from the new environment
-        Request newRequest = newEnvironment.GetRequest(request.x, request.y);
-        //can't fill if not at depot
-        if(newRoute.nodes.get(0).isDepot){
-            loadLimit = newRoute.vehicle.capacity;
-        }
-        else{
-            loadLimit = newRoute.vehicle.load;
-        }
+        newRequest = newEnvironment.GetRequest(request.x, request.y);
+
         //calculate score to compare to
         bestScore = route.EvaluateRoute(environment,currentTime);
         //get the key nodes, these will stay in the new routes
@@ -362,54 +478,6 @@ public class LNS {
             newRoute.stops.add(stopsIndex+1,newEnvironment.GetNode(newRequestToInsert.x, newRequestToInsert.y));
         }
         return newRoute;
-    }
-
-    public int RemoveRequest(Request request, Route route, Environment environment){
-        int positionAtStops=0;
-        int positionAtNodes=0;
-        int x;
-        int y;
-        int amountRemoved=0;
-        ArrayList<Node> trip;
-
-        if(!route.nodes.get(0).isRequest && !route.nodes.get(0).isDepot){
-            route.stops.add(0,route.nodes.get(0));
-        }
-
-        for(int i=0;i<route.stops.size();i++){
-            if(route.stops.get(i).x==request.x && route.stops.get(i).y==request.y){
-                positionAtStops=i;
-                break;
-            }
-        }
-
-        if(positionAtStops==0)return 0;
-        //for each node
-        for(int i=0;i<route.nodes.size();i++){
-            if(route.nodes.get(i).x==route.stops.get(positionAtStops-1).x && route.nodes.get(i).y==route.stops.get(positionAtStops-1).y){
-                do {
-                    positionAtNodes=i;
-                    x=route.nodes.get(i).x;
-                    y=route.nodes.get(i).y;
-                    route.nodes.remove(i);
-                    amountRemoved++;
-                }while(x!=route.stops.get(positionAtStops+1).x || y!=route.stops.get(positionAtStops+1).y || amountRemoved<=1);
-                break;
-            }
-        }
-        trip = this.CalculateRoute(route.stops.get(positionAtStops-1),route.stops.get(positionAtStops+1),environment);
-        route.nodes.addAll(positionAtNodes,trip);
-        route.stops.remove(positionAtStops);
-        route.vehicle.load-=route.vehicle.GetRequestLoad(request.x,request.y);
-        route.vehicle.RemoveRequestLoad(request.x,request.y);
-        request.tripsLeft=0;
-        request.coveredLoad=0;
-
-        if(!route.stops.get(0).isRequest && !route.stops.get(0).isDepot){
-            route.stops.remove(0);
-        }
-
-        return 1;
     }
 
     public ArrayList<Node> GetPossibleMoves(Node node, Environment environment){

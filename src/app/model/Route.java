@@ -40,7 +40,7 @@ public class Route {
 
     public ArrayList<Node> GetKeyNodes(){
         ArrayList<Node> keyNodes = new ArrayList<>();
-        if(!this.stops.get(0).isDepot){
+        if(!this.stops.get(0).isDepot && !this.stops.get(0).isRequest){
             keyNodes.add(this.nodes.get(0));
         }
         keyNodes.addAll(this.stops);
