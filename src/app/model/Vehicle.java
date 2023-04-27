@@ -17,11 +17,20 @@ public class Vehicle {
     }
 
     public int AddRequestLoad(int x, int y, int load){
-        RequestLoad requestLoad = new RequestLoad();
-        requestLoad.nodeX = x;
-        requestLoad.nodeY = y;
-        requestLoad.load = load;
-        this.requestLoads.add(requestLoad);
+        boolean exists = false;
+        for(int i=0;i<this.requestLoads.size();i++){
+            if(this.requestLoads.get(i).nodeX == x && this.requestLoads.get(i).nodeY == y){
+                this.requestLoads.get(i).load+=load;
+                exists=true;
+            }
+        }
+        if(!exists) {
+            RequestLoad requestLoad = new RequestLoad();
+            requestLoad.nodeX = x;
+            requestLoad.nodeY = y;
+            requestLoad.load = load;
+            this.requestLoads.add(requestLoad);
+        }
         return 1;
     }
 

@@ -49,57 +49,22 @@ public class Route {
     }
 
     public boolean IsFeasible(LocalDateTime currentTime, Environment environment){
-        int stopIndex = 0;
-        int totalLoad = 0;
         boolean isFeasible = true;
-        long elapsedTime;
         long pendingTime;
-        Request request;
 
-        for(int i=0;i<this.nodes.size();i++){
-            if(this.nodes.get(i).x==this.stops.get(stopIndex).x && this.nodes.get(i).y==this.stops.get(stopIndex).y){
-                stopIndex++;
-                if(this.nodes.get(i).isRequest){
-                    //totalLoad+=environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).load;
-                    //
-                    elapsedTime=ChronoUnit.MINUTES.between(environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).startTime,currentTime);
-                    pendingTime=(i*60)/this.vehicle.speed;
-                    request = environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y);
-                    if(elapsedTime+pendingTime>request.timeWindow*60){
-                        isFeasible = false;
+        for(int i=0;i<this.stops.size();i++){
+            if(this.stops.get(i).isRequest){
+                for(int j=0;j<this.nodes.size();j++){
+                    if(this.nodes.get(j).x == this.stops.get(i).x && this.nodes.get(j).y == this.stops.get(i).y){
+                        pendingTime=(j*60)/this.vehicle.speed;
+                        if(currentTime.plusMinutes(pendingTime+1).isAfter(environment.GetRequest(this.stops.get(i).x,this.stops.get(i).y).startTime.plusHours(environment.GetRequest(this.stops.get(i).x,this.stops.get(i).y).timeWindow))){
+                            isFeasible = false;
+                        }
+                        break;
                     }
-                }
-                if(stopIndex==this.stops.size()){
-                    break;
                 }
             }
         }
-        /*if(totalLoad>this.vehicle.load){
-            isFeasible = false;
-        }*/
-        return isFeasible;
-    }
-
-    public boolean IsFeasible(Environment environment){
-        int stopIndex = 0;
-        int totalLoad = 0;
-        boolean isFeasible = true;
-        for(int i=0;i<this.nodes.size();i++){
-            if(this.nodes.get(i).x==this.stops.get(stopIndex).x && this.nodes.get(i).y==this.stops.get(stopIndex).y){
-                stopIndex++;
-                if(this.nodes.get(i).isRequest){
-                    totalLoad+=environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).load;
-                    //
-                    if((int)((float)i*60/(float)this.vehicle.speed)>environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).timeWindow){
-                        isFeasible = false;
-                    }
-                }
-                if(stopIndex==this.stops.size()-1)break;
-            }
-        }
-        /*if(totalLoad>this.vehicle.capacity){
-            isFeasible = false;
-        }*/
         return isFeasible;
     }
 
@@ -135,17 +100,20 @@ public class Route {
     }
 
     public float EvaluateRoute(Environment environment, LocalDateTime currentTime){
-        int stopsIndex=0;
         float score=0;
         int requestAmount=0;
-        for(int i=0;i<this.nodes.size();i++){
-            if(this.nodes.get(i).x==this.stops.get(stopsIndex).x && this.nodes.get(i).y==this.stops.get(stopsIndex).y){
-                stopsIndex++;
-                if(this.nodes.get(i).isRequest){
-                    score+=(float)environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).timeWindow-(ChronoUnit.MINUTES.between(environment.GetRequest(this.nodes.get(i).x,this.nodes.get(i).y).startTime,currentTime)+(int)((float)i*60/(float)this.vehicle.speed));
-                    requestAmount++;
+        LocalDateTime startTime;
+
+        for(int i=0;i<this.stops.size();i++){
+            if(this.stops.get(i).isRequest){
+                for(int j=0;j<this.nodes.size();j++){
+                    if(this.nodes.get(j).x == this.stops.get(i).x && this.nodes.get(j).y == this.stops.get(i).y){
+                        startTime = environment.GetRequest(this.nodes.get(j).x,this.nodes.get(j).y).startTime;
+                        score+=ChronoUnit.MINUTES.between(startTime,currentTime)+(i*60)/this.vehicle.speed;
+                        break;
+                    }
                 }
-                if(stopsIndex==this.stops.size())break;
+                requestAmount++;
             }
         }
         return score/requestAmount;
