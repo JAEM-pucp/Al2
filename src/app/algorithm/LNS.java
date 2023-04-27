@@ -29,6 +29,7 @@ public class LNS {
         Environment initialEnvironment;
         int iterations = 0;
         int n = 1;
+        int destroyN = 2;
         Solution initialSolution;
         //check if algorithm was executed before
         if(input.previousSolution==null){
@@ -50,7 +51,7 @@ public class LNS {
             //copy solution
             newSolution = initialSolution.CopySolution(newEnvironment);
             //destroy new solution and store the unrouted requests
-            unrouted = this.Destroy(newSolution,newEnvironment);
+            unrouted = this.Destroy(newSolution,newEnvironment,destroyN);
             //add the new unrouted to the previous unrouted requests
             newSolution.unrouted.addAll(unrouted);
             //repair the solution
@@ -157,7 +158,7 @@ public class LNS {
         return solution;
     }
 
-    public ArrayList<Request> Destroy(Solution solution, Environment environment){
+    public ArrayList<Request> Destroy(Solution solution, Environment environment, int n){
         Random random = new Random();
         ArrayList<Request> requests;
         ArrayList<Request> unrouted = new ArrayList<>();
@@ -167,7 +168,7 @@ public class LNS {
         int requestAmount = solution.GetRequestAmount();
 
         //while stop condition not met
-        while(eliminated< requestAmount/2) {
+        while(eliminated< requestAmount/n) {
 
             //for every available route
             for (int i = 0; i < availableRoutes.size(); i++) {
@@ -185,19 +186,20 @@ public class LNS {
 
                         //if it was removed successfully
                         if(result) {
+                            unrouted.remove(requests.get(j));
                             unrouted.add(requests.get(j));
                             eliminated++;
 
                             //if all requests were removed from the route
-                            if(availableRoutes.get(i).GetRequests(environment).size()==0){
+                            /*if(availableRoutes.get(i).GetRequests(environment).size()==0){
                                 availableRoutes.get(i).startTime = null;
-                            }
+                            }*/
 
-                            if (eliminated >= requestAmount / 2) break;
+                            if (eliminated >= requestAmount / n) break;
                         }
                     }
                 }
-                if(eliminated>= requestAmount/2)break;
+                if(eliminated>= requestAmount/n)break;
             }
         }
         return unrouted;
