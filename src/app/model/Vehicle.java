@@ -16,6 +16,13 @@ public class Vehicle {
         this.requestLoads = new ArrayList<>();
     }
 
+    public int GetTotalRequestsLoads(){
+        int total=0;
+        for(int i=0;i<this.requestLoads.size();i++){
+            total+=this.requestLoads.get(i).load;
+        }
+        return total;
+    }
     public int AddRequestLoad(int x, int y, int load){
         boolean exists = false;
         for(int i=0;i<this.requestLoads.size();i++){

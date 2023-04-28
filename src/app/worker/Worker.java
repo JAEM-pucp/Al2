@@ -15,6 +15,7 @@ import java.util.Scanner;
 public class Worker {
     public void Simulate(){
         LocalDateTime currentTime = LocalDateTime.of(2023, Month.APRIL, 1, 0, 0);
+        LocalDateTime comp = LocalDateTime.of(2023, Month.APRIL, 1, 5, 8);
         Environment environment;//25 4
         environment = new Environment(70, 50, 45, 30, 20, 25, 30, 5, 40, 4, 60, 3);
         //environment.SetBlockage(44,30);
@@ -166,7 +167,7 @@ public class Worker {
 
                 //if changes were made, routes may need to be deactivated
                 for(int i=0;i<input.previousSolution.routes.size();i++){
-                    if(input.previousSolution.routes.get(i).stops.size()==2 && input.previousSolution.routes.get(i).nodes.get(0).isDepot){
+                    if(input.previousSolution.routes.get(i).stops.size()==2 && input.previousSolution.routes.get(i).stops.get(0).isDepot){
                         input.previousSolution.routes.get(i).startTime=null;
                     }
                 }
@@ -217,18 +218,17 @@ public class Worker {
                                         input.environment.RemoveRequest(x,y);
                                     }
                                 }
+                            }
 
-                                //if the route is over, initialize it
-                                if(input.previousSolution.routes.get(i).nodes.size()==0){
-                                    input.previousSolution.routes.get(i).startTime=null;
-                                    input.previousSolution.routes.get(i).nodes.add(input.environment.GetDepot());
-                                    input.previousSolution.routes.get(i).nodes.add(input.environment.GetDepot());
-                                    input.previousSolution.routes.get(i).stops.add(input.environment.GetDepot());
-                                    input.previousSolution.routes.get(i).stops.add(input.environment.GetDepot());
-                                } /*else if (input.previousSolution.routes.get(i).GetRequests(input.environment).size()==0 && input.previousSolution.routes.get(i).stops.get(0).isDepot) {
+                            //if the route is over, initialize it
+                            if(input.previousSolution.routes.get(i).nodes.size()==1){
+                                input.previousSolution.routes.get(i).startTime=null;
+                                input.previousSolution.routes.get(i).nodes.add(input.environment.GetDepot());
+                                input.previousSolution.routes.get(i).stops.add(input.environment.GetDepot());
+                                input.previousSolution.routes.get(i).vehicle.load=0;
+                            } /*else if (input.previousSolution.routes.get(i).GetRequests(input.environment).size()==0 && input.previousSolution.routes.get(i).stops.get(0).isDepot) {
                                     input.previousSolution.routes.get(i).startTime=null;
                                 }*/
-                            }
                         }
                     }
                 }
@@ -264,6 +264,10 @@ public class Worker {
 
             //add a minute to current time
             currentTime = currentTime.plusMinutes(1);
+            comp = LocalDateTime.of(2023, Month.APRIL, 1, 3, 48);
+            if(currentTime.equals(comp)){
+                System.out.print("");
+            }
         }
         if(expNumAmount==0){
             expNum=0;

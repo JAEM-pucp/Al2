@@ -50,7 +50,7 @@ public class LNS {
             //copy solution
             newSolution = initialSolution.CopySolution(newEnvironment);
             //destroy new solution and store the unrouted requests
-            this.Destroy(newSolution,newEnvironment,destroyN,false);
+            this.Destroy(newSolution,newEnvironment,destroyN,true);
 
             //repair the solution
             this.Repair(newSolution,newEnvironment,input.currentTime);
@@ -107,6 +107,7 @@ public class LNS {
                     while(j<unrouted.size()){
                         newRoute = this.InsertRequest(unrouted.get(j),availableRoutes.get(i),environment,currentTime);
                         if(newRoute.IsFeasible(currentTime,environment)){
+                            noChanges=false;
                             availableRoutes.get(i).CopyFrom(newRoute,environment);
 
                             if(unrouted.get(j).load-unrouted.get(j).coveredLoad<=availableCapacity){
@@ -151,7 +152,7 @@ public class LNS {
         int counter =0;
 
         //while stop condition not met
-        while(eliminated< requestAmount/n) {
+        while(eliminated< requestAmount/n && counter!=100) {
 
             //for every available route
             for (int i = 0; i < availableRoutes.size(); i++) {
@@ -229,14 +230,21 @@ public class LNS {
     public void RecalculateRoute(Route route, Environment environment){
         ArrayList<Node> importantNodes = new ArrayList<>();
         ArrayList<Node> newNodes = new ArrayList<>();
+        Node start;
+        Node end;
         int counter;
-        if(!route.nodes.get(0).isDepot && !route.nodes.get(0).isRequest){
+
+        if((route.nodes.get(0).x != route.stops.get(0).x || route.nodes.get(0).y != route.stops.get(0).y)){
+            importantNodes.add(route.nodes.get(0));
+        } else if (route.stops.size()==1 && route.nodes.size()>1) {
             importantNodes.add(route.nodes.get(0));
         }
         importantNodes.addAll(route.stops);
         counter=0;
         while(true){
-            newNodes.addAll(this.CalculateRoute(importantNodes.get(counter),importantNodes.get(counter+1),environment));
+            start = importantNodes.get(counter);
+            end = importantNodes.get(counter+1);
+            newNodes.addAll(this.CalculateRoute(start,end,environment));
             counter++;
             if(counter+1== importantNodes.size())break;
             newNodes.remove(newNodes.size()-1);
@@ -269,7 +277,14 @@ public class LNS {
 
                 //find the best route it can be inserted in
                 for (int j = 0; j < availableRoutes.size(); j++) {
-                    availableCapacity = availableRoutes.get(j).vehicle.capacity-availableRoutes.get(j).vehicle.load;
+                    //if the vehicle is at depot the available capacity for oncoming requests is the total capacity minus the load already reserved
+                    //if the vehicle is on the road the available capacity is the load in the vehicle minus the load already reserved
+                    if(availableRoutes.get(0).nodes.get(0).isDepot){
+                        availableCapacity = availableRoutes.get(j).vehicle.capacity-availableRoutes.get(j).vehicle.load;
+                    }else {
+                        availableCapacity = availableRoutes.get(j).vehicle.load - availableRoutes.get(j).vehicle.GetTotalRequestsLoads();
+                    }
+
                     //if route can accept requests
                     if(availableCapacity>0) {
                         alreadyIn = false;
@@ -320,7 +335,9 @@ public class LNS {
                         availableRoutes.get(bestRouteIndex).CopyFrom(bestRoute, environment);
                     }
                     availableRoutes.get(bestRouteIndex).vehicle.AddRequestLoad(solution.unrouted.get(i).x,solution.unrouted.get(i).y,bestRequestLoad);
-                    availableRoutes.get(bestRouteIndex).vehicle.load+=bestRequestLoad;
+                    if(availableRoutes.get(bestRouteIndex).nodes.get(0).isDepot) {
+                        availableRoutes.get(bestRouteIndex).vehicle.load += bestRequestLoad;
+                    }
                     solution.unrouted.get(i).tripsLeft++;
                     solution.unrouted.get(i).coveredLoad+=bestRequestLoad;
                     if(solution.unrouted.get(i).load==solution.unrouted.get(i).coveredLoad){
@@ -373,6 +390,57 @@ public class LNS {
         Environment newEnvironment;
         Route newRoute;
         Request newRequest;
+
+
+        if(route.nodes.get(0).x != route.stops.get(0).x || route.nodes.get(0).y != route.stops.get(0).y){
+            //make a copy of the route
+            newRoute = new Route();
+            for(int j=0;j<route.nodes.size();j++){
+                newRoute.nodes.add(route.nodes.get(j));
+            }
+            for(int j=0;j<route.stops.size();j++){
+                newRoute.stops.add(route.stops.get(j));
+            }
+            newRoute.vehicle = route.vehicle;
+            newRoute.startTime = route.startTime;
+
+            //insert at start
+            newRoute.stops.add(0,environment.GetNode(request.x, request.y));
+
+            //recalculate route
+            this.RecalculateRoute(newRoute,environment);
+            newScore = newRoute.EvaluateRoute(environment,currentTime);
+            //if this position IS FEASIBLE AND is the best to insert, update best
+            if(newRoute.IsFeasible(currentTime,environment) && newScore<bestScore){
+                bestScore = newScore;
+                bestRoute = newRoute;
+                changes = true;
+            }
+        }else if (route.stops.size()==1 && route.nodes.size()>1) {
+            //make a copy of the route
+            newRoute = new Route();
+            for(int j=0;j<route.nodes.size();j++){
+                newRoute.nodes.add(route.nodes.get(j));
+            }
+            for(int j=0;j<route.stops.size();j++){
+                newRoute.stops.add(route.stops.get(j));
+            }
+            newRoute.vehicle = route.vehicle;
+            newRoute.startTime = route.startTime;
+
+            //insert at start
+            newRoute.stops.add(0,environment.GetNode(request.x, request.y));
+
+            //recalculate route
+            this.RecalculateRoute(newRoute,environment);
+            newScore = newRoute.EvaluateRoute(environment,currentTime);
+            //if this position IS FEASIBLE AND is the best to insert, update best
+            if(newRoute.IsFeasible(currentTime,environment) && newScore<bestScore){
+                bestScore = newScore;
+                bestRoute = newRoute;
+                changes = true;
+            }
+        }
 
         for(int i=0;i<route.stops.size()-1;i++){
             //make a copy of the route
