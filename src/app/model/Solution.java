@@ -61,13 +61,26 @@ public class Solution {
         }
     }
 
+    public ArrayList<Request> GetOrderedUnrouted(){
+        //make a simple copy
+        ArrayList<Request> unrouted = new ArrayList<>();
+        for(int i=0;i<this.unrouted.size();i++){
+            unrouted.add(this.unrouted.get(i));
+        }
+        unrouted.sort(new RequestComparator());
+        return unrouted;
+    }
     public float CalculateScore(Environment environment, LocalDateTime currentTime){
         float costAvg=0;
+        int number=0;
         for(int i=0;i<this.routes.size();i++){
-            costAvg+=this.routes.get(i).EvaluateRoute(environment,currentTime);
+            if(this.routes.get(i).GetRequestAmount()>0){
+                costAvg+=this.routes.get(i).EvaluateRoute(environment,currentTime);
+                number++;
+            }
         }
 
-        return costAvg/this.routes.size();
+        return costAvg/number;
     }
 
     public boolean IsActive(){

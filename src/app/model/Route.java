@@ -51,13 +51,16 @@ public class Route {
     public boolean IsFeasible(LocalDateTime currentTime, Environment environment){
         boolean isFeasible = true;
         long pendingTime;
-
+        LocalDateTime deadline;
+        Request request;
         for(int i=0;i<this.stops.size();i++){
             if(this.stops.get(i).isRequest){
                 for(int j=0;j<this.nodes.size();j++){
                     if(this.nodes.get(j).x == this.stops.get(i).x && this.nodes.get(j).y == this.stops.get(i).y){
                         pendingTime=(j*60)/this.vehicle.speed;
-                        if(currentTime.plusMinutes(pendingTime+1).isAfter(environment.GetRequest(this.stops.get(i).x,this.stops.get(i).y).startTime.plusHours(environment.GetRequest(this.stops.get(i).x,this.stops.get(i).y).timeWindow))){
+                        request = environment.GetRequest(this.stops.get(i).x,this.stops.get(i).y);
+                        deadline = request.startTime.plusHours(environment.GetRequest(this.stops.get(i).x,this.stops.get(i).y).timeWindow);
+                        if(currentTime.plusMinutes(pendingTime+1).isAfter(deadline)){
                             isFeasible = false;
                         }
                         break;

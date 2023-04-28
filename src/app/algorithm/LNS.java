@@ -23,12 +23,13 @@ public class LNS {
         Environment bestEnvironment;
         float newScore;
         float bestScore;
+        Random random = new Random();
         Solution newSolution;
         Environment newEnvironment;
         Environment initialEnvironment;
         int iterations = 0;
-        int n = 1;
-        int destroyN = 2;
+        int n = 50;
+        int destroyN = 3;
         Solution initialSolution;
         //check if algorithm was executed before
         if(input.previousSolution==null){
@@ -50,7 +51,7 @@ public class LNS {
             //copy solution
             newSolution = initialSolution.CopySolution(newEnvironment);
             //destroy new solution and store the unrouted requests
-            this.Destroy(newSolution,newEnvironment,destroyN,true);
+            this.Destroy(newSolution,newEnvironment,(random.nextInt(20)+10),false);
 
             //repair the solution
             this.Repair(newSolution,newEnvironment,input.currentTime);
@@ -61,14 +62,9 @@ public class LNS {
                 bestSolution = newSolution;
                 bestEnvironment = newEnvironment;
                 bestUnroutedAmount = newSolution.unrouted.size();
-                initialSolution = newSolution;
-                initialEnvironment = newEnvironment;
             }
             //compare and update if necessary
-            if(newSolution.unrouted.size()==bestUnroutedAmount && newScore<bestScore){
-                bestScore = newScore;
-                bestSolution = newSolution;
-                bestEnvironment = newEnvironment;
+            if(newSolution.unrouted.size()<=bestUnroutedAmount+4 && newScore<bestScore+100){
                 initialSolution = newSolution;
                 initialEnvironment = newEnvironment;
             }
@@ -152,7 +148,7 @@ public class LNS {
         int counter =0;
 
         //while stop condition not met
-        while(eliminated< requestAmount/n && counter!=100) {
+        while(eliminated< n*requestAmount/100 && counter!=100) {
 
             //for every available route
             for (int i = 0; i < availableRoutes.size(); i++) {
@@ -265,13 +261,13 @@ public class LNS {
         Route newRoute;
         Route bestRoute = new Route();
         ArrayList<Route> availableRoutes = solution.GetAvailableRoutes();
-
+        ArrayList<Request> unrouted = solution.GetOrderedUnrouted();
         //repair until all requests are covered or no more insertions are possible
-        while(solution.unrouted.size()!=0 && insertionWasPossible) {
+        while(unrouted.size()!=0 && insertionWasPossible) {
 
             insertionWasPossible=false;
             //for each unrouted request
-            for (int i = 0; i < solution.unrouted.size();) {
+            for (int i = 0; i < unrouted.size();) {
                 bestScore = 9999;
                 insertionWasPossible=false;
 
@@ -279,7 +275,7 @@ public class LNS {
                 for (int j = 0; j < availableRoutes.size(); j++) {
                     //if the vehicle is at depot the available capacity for oncoming requests is the total capacity minus the load already reserved
                     //if the vehicle is on the road the available capacity is the load in the vehicle minus the load already reserved
-                    if(availableRoutes.get(0).nodes.get(0).isDepot){
+                    if(availableRoutes.get(j).nodes.get(0).isDepot){
                         availableCapacity = availableRoutes.get(j).vehicle.capacity-availableRoutes.get(j).vehicle.load;
                     }else {
                         availableCapacity = availableRoutes.get(j).vehicle.load - availableRoutes.get(j).vehicle.GetTotalRequestsLoads();
@@ -289,15 +285,15 @@ public class LNS {
                     if(availableCapacity>0) {
                         alreadyIn = false;
 
-                        if (solution.unrouted.get(i).load - solution.unrouted.get(i).coveredLoad <= availableCapacity) {
-                            requestLoad = solution.unrouted.get(i).load - solution.unrouted.get(i).coveredLoad;
+                        if (unrouted.get(i).load - unrouted.get(i).coveredLoad <= availableCapacity) {
+                            requestLoad = unrouted.get(i).load - unrouted.get(i).coveredLoad;
                         } else {
                             requestLoad = availableCapacity;
                         }
 
                         //if the request is already in the route
                         for (int k = 0; k < availableRoutes.get(j).stops.size(); k++) {
-                            if (solution.unrouted.get(i).x == availableRoutes.get(j).stops.get(k).x && solution.unrouted.get(i).y == availableRoutes.get(j).stops.get(k).y) {
+                            if (unrouted.get(i).x == availableRoutes.get(j).stops.get(k).x && unrouted.get(i).y == availableRoutes.get(j).stops.get(k).y) {
                                 alreadyIn = true;
                                 break;
                             }
@@ -312,7 +308,7 @@ public class LNS {
                             //otherwise insert request at its best position in the route
                             //insert request shouldn't modify input
                             //outputs modified nodes and stops, checks feasibility
-                            newRoute = InsertRequest(solution.unrouted.get(i), availableRoutes.get(j), environment, currentTime);
+                            newRoute = InsertRequest(unrouted.get(i), availableRoutes.get(j), environment, currentTime);
                             if (newRoute != null) {
                                 newScore = newRoute.EvaluateRoute(environment, currentTime);
 
@@ -334,15 +330,15 @@ public class LNS {
                     if(!alreadyIn) {
                         availableRoutes.get(bestRouteIndex).CopyFrom(bestRoute, environment);
                     }
-                    availableRoutes.get(bestRouteIndex).vehicle.AddRequestLoad(solution.unrouted.get(i).x,solution.unrouted.get(i).y,bestRequestLoad);
+                    availableRoutes.get(bestRouteIndex).vehicle.AddRequestLoad(unrouted.get(i).x,unrouted.get(i).y,bestRequestLoad);
                     if(availableRoutes.get(bestRouteIndex).nodes.get(0).isDepot) {
                         availableRoutes.get(bestRouteIndex).vehicle.load += bestRequestLoad;
                     }
-                    solution.unrouted.get(i).tripsLeft++;
-                    solution.unrouted.get(i).coveredLoad+=bestRequestLoad;
-                    if(solution.unrouted.get(i).load==solution.unrouted.get(i).coveredLoad){
-                        solution.unrouted.remove(i);
-                        if(solution.unrouted.size()==0)break;
+                    unrouted.get(i).tripsLeft++;
+                    unrouted.get(i).coveredLoad+=bestRequestLoad;
+                    if(unrouted.get(i).load==unrouted.get(i).coveredLoad){
+                        unrouted.remove(i);
+                        if(unrouted.size()==0)break;
                     }
                 }
                 else{
@@ -350,6 +346,7 @@ public class LNS {
                 }
             }
         }
+        solution.unrouted=unrouted;
         return solution;
     }
 
@@ -357,17 +354,38 @@ public class LNS {
         ArrayList<Node> nodes = new ArrayList<>();
         Node currentNode = origin;
         Node chosenMove = new Node();
-        int lowestCost = 999;
+        Random random = new Random();
+        int lowestCost = 9999;
         int cost;
+        int number;
+        boolean moveWasChosen = false;
         nodes.add(currentNode);
         ArrayList<Node> possibleMoves;
         while(true){
             possibleMoves = this.GetPossibleMoves(currentNode,environment);
+            lowestCost = 9999;
             for(int i=0;i< possibleMoves.size();i++){
                 cost = possibleMoves.get(i).CalculateScore(destination);
-                if(cost < lowestCost){
+                if(cost < lowestCost && cost<9000){
                     lowestCost = cost;
                     chosenMove = possibleMoves.get(i);
+                }
+            }
+            number = random.nextInt(100);
+            if(number>80) {
+                moveWasChosen = false;
+                while(true){
+                    for(int i=0;i< possibleMoves.size();i++){
+                        cost = possibleMoves.get(i).CalculateScore(destination);
+                        if(cost<9000 && random.nextBoolean()){
+                            chosenMove = possibleMoves.get(i);
+                            moveWasChosen = true;
+                            break;
+                        }
+                    }
+                    if(moveWasChosen){
+                        break;
+                    }
                 }
             }
             nodes.add(chosenMove);

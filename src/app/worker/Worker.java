@@ -47,7 +47,7 @@ public class Worker {
 
         boolean started =false;
         boolean blockageWasAdded = false;
-        long expNum = 0;
+        float expNum = 0;
         long timeElapsedInRoute;
         int expNumAmount =0;
         int reqAmount;
@@ -56,6 +56,7 @@ public class Worker {
         boolean isRequest;
         boolean changes = false;
         boolean collapse = false;
+        boolean newRoutesAvailable;
         LocalDateTime endTime;
         //bike moves one node every minute
         //car moves one node every two minutes
@@ -64,6 +65,7 @@ public class Worker {
         //run the simulation
         while(true){
             changes=false;
+            newRoutesAvailable=false;
             System.out.println("Current time: " + currentTime.format(formatter));
             input.currentTime = currentTime;
 
@@ -155,6 +157,7 @@ public class Worker {
                     for (int i = 0; i < input.previousSolution.routes.size(); i++) {
                         if (input.previousSolution.routes.get(i).startTime == null && input.previousSolution.routes.get(i).GetRequestAmount() > 0) {
                             input.previousSolution.routes.get(i).startTime = currentTime;
+                            newRoutesAvailable = true;
                         }
                     }
                     started = true;
@@ -208,7 +211,7 @@ public class Worker {
                                     if(input.environment.GetRequest(x,y).tripsLeft==0){
 
                                         //update expNum
-                                        expNum+=(ChronoUnit.MINUTES.between(input.environment.GetRequest(x,y).startTime,currentTime));
+                                        expNum+=(float)(ChronoUnit.MINUTES.between(currentTime,input.environment.GetRequest(x,y).startTime.plusHours(input.environment.GetRequest(x,y).timeWindow)));
                                         expNumAmount++;
 
                                         //update environment node to no longer be a request
@@ -226,6 +229,7 @@ public class Worker {
                                 input.previousSolution.routes.get(i).nodes.add(input.environment.GetDepot());
                                 input.previousSolution.routes.get(i).stops.add(input.environment.GetDepot());
                                 input.previousSolution.routes.get(i).vehicle.load=0;
+                                newRoutesAvailable = true;
                             } /*else if (input.previousSolution.routes.get(i).GetRequests(input.environment).size()==0 && input.previousSolution.routes.get(i).stops.get(0).isDepot) {
                                     input.previousSolution.routes.get(i).startTime=null;
                                 }*/
@@ -236,6 +240,14 @@ public class Worker {
             //if all requests were attended and the routes aren't active, finish simulation
             if(requests.size()==0 && !input.previousSolution.IsActive()){
                 break;
+            }
+
+            if(newRoutesAvailable){
+                output = lns.Solve(input);
+
+                //update input with the values obtained
+                input.previousSolution = output.solution;
+                input.environment = output.environment;
             }
 
             if(started){
@@ -264,7 +276,7 @@ public class Worker {
 
             //add a minute to current time
             currentTime = currentTime.plusMinutes(1);
-            comp = LocalDateTime.of(2023, Month.APRIL, 1, 3, 48);
+            comp = LocalDateTime.of(2023, Month.APRIL, 1, 0, 50);
             if(currentTime.equals(comp)){
                 System.out.print("");
             }
