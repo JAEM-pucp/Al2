@@ -124,7 +124,9 @@ public class Solution {
     public void RemoveRequest(int id, Environment environment) {
         boolean alreadyIn;
         LNS lns = new LNS();
+        boolean checkNextRoute=false;
         for(int i=0;i<this.routes.size();i++){
+            checkNextRoute=false;
             for(int j=0;j<this.routes.get(i).tripNodes.size();j++){
                 for(int k=0;k<this.routes.get(i).tripNodes.get(j).deliveries.size();k++){
                     if(this.routes.get(i).tripNodes.get(j).deliveries.get(k).requestId==id){
@@ -147,7 +149,14 @@ public class Solution {
                         if(this.routes.get(i).tripNodes.get(j).deliveries.size()==0){
                             this.routes.set(i,lns.CalculateRouteFromStops(this.routes.get(i).GetStops(),this.routes.get(i).id,this.routes.get(i).vehicle,environment));
                         }
+                        checkNextRoute=true;
                     }
+                    if(checkNextRoute){
+                        break;
+                    }
+                }
+                if(checkNextRoute){
+                    break;
                 }
             }
         }

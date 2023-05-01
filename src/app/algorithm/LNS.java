@@ -32,7 +32,7 @@ public class LNS {
             //create a copy of the initial solution
             newSolution = new Solution(initialSolution);
             //destroy the solution
-            this.Destroy(newSolution, environment);
+            //this.Destroy(newSolution, environment);
             //repair solution
             this.Repair(newSolution, environment);
             //evaluateSolution
