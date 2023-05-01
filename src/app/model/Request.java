@@ -1,43 +1,34 @@
 package app.model;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 public class Request {
+    public int id;
     public int x;
     public int y;
-    public int load;
-    public int coveredLoad;
-    public int tripsLeft;
-    public int timeWindow;
+    public int uncoveredLoad;
     public LocalDateTime startTime;
+    //in hours
+    public int timeWindow;
     public int clientId;
 
-    public Request(){
-
-    }
-
-    public Request(int x, int y, int load, int timeWindow, LocalDateTime startTime, int clientId) {
+    public Request(int id, int x, int y, int uncoveredLoad, LocalDateTime startTime, int timeWindow, int clientId) {
+        this.id = id;
         this.x = x;
         this.y = y;
-        this.load = load;
-        this.timeWindow = timeWindow;
+        this.uncoveredLoad = uncoveredLoad;
         this.startTime = startTime;
-        this.coveredLoad = 0;
-        this.tripsLeft = 0;
+        this.timeWindow = timeWindow;
         this.clientId = clientId;
     }
 
-    public Request CopyRequest(){
-        Request request = new Request();
-        request.x = this.x;
-        request.y = this.y;
-        request.load = this.load;
-        request.timeWindow = this.timeWindow;
-        request.startTime = this.startTime;
-        request.coveredLoad = this.coveredLoad;
-        request.tripsLeft = this.tripsLeft;
-        request.clientId = this.clientId;
-        return request;
+    public Request(Request request) {
+        this.id=request.id;
+        this.x=request.x;
+        this.y=request.y;
+        this.uncoveredLoad= request.uncoveredLoad;
+        this.timeWindow=request.timeWindow;
+        this.startTime=request.startTime;
+        this.clientId=request.clientId;
     }
 }

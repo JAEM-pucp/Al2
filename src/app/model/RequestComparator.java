@@ -8,9 +8,9 @@ public class RequestComparator implements Comparator {
         Request r1=(Request)o1;
         Request r2=(Request)o2;
         if(r1.timeWindow== r2.timeWindow){
-            if(r1.load-r1.coveredLoad==r2.load-r2.coveredLoad){
+            if(r1.uncoveredLoad==r2.uncoveredLoad){
                 return 0;
-            } else if (r1.load-r1.coveredLoad>r2.load-r2.coveredLoad) {
+            } else if (r1.uncoveredLoad<r2.uncoveredLoad) {
                 return 1;
             }else {
                 return -1;

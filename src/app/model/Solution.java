@@ -1,67 +1,117 @@
 package app.model;
 
-import java.time.LocalDateTime;
+import app.algorithm.LNS;
+
 import java.util.ArrayList;
 
 public class Solution {
     public ArrayList<Route> routes;
     public ArrayList<Request> unrouted;
+    public boolean started;
 
-    public Solution(){
+    public Solution(int carTotal, int carCapacity, int carSpeed, int carCost, int bikeTotal, int bikeCapacity, int bikeSpeed, int bikeCost,Environment environment){
         this.routes = new ArrayList<>();
         this.unrouted = new ArrayList<>();
-    }
-
-    public Solution CopySolution(Environment environment){
-        Solution solution = new Solution();
         Route route;
-        for(int i=0;i<this.routes.size();i++){
-            route = this.routes.get(i).CopyRoute(environment);
-            solution.routes.add(route);
+        for(int i=0;i<carTotal;i++){
+            route = new Route();
+            route.id=i;
+            route.tripNodes.add(new TripNode(0, environment.depotX, environment.depotY, true,null));
+            route.tripNodes.add(new TripNode(1, environment.depotX, environment.depotY, true,null));
+            route.vehicle = new Vehicle(i,carCapacity,'c',carSpeed,carCost,true);
+            this.routes.add(route);
         }
-        for(int i=0;i<this.unrouted.size();i++){
-            solution.unrouted.add(environment.GetRequest(this.unrouted.get(i).x,this.unrouted.get(i).y));
+        for(int i=0;i<bikeTotal;i++){
+            route = new Route();
+            route.id=i+carTotal;
+            route.tripNodes.add(new TripNode(0, environment.depotX, environment.depotY, true,null));
+            route.tripNodes.add(new TripNode(1, environment.depotX, environment.depotY, true,null));
+            route.vehicle = new Vehicle(i+carTotal,bikeCapacity,'b',bikeSpeed,bikeCost,true);
+            this.routes.add(route);
         }
-        return solution;
+        this.started = false;
+    }
+    public Solution(Solution initialSolution) {
+        this.routes = new ArrayList<>();
+        for(int i=0;i<initialSolution.routes.size();i++){
+            this.routes.add(new Route(initialSolution.routes.get(i)));
+        }
+        this.unrouted=new ArrayList<>();
+        for(int i=0;i<initialSolution.unrouted.size();i++){
+            this.unrouted.add(new Request(initialSolution.unrouted.get(i)));
+        }
+        this.started= initialSolution.started;
     }
 
-    public ArrayList<Route> GetAvailableRoutes(){
-        ArrayList<Route> availableRoutes = new ArrayList<>();
-        for(int i=0;i<this.routes.size();i++){
-            if(this.routes.get(i).vehicle.isAvailable){
-                availableRoutes.add(this.routes.get(i));
+    public int GetUnroutedAmount() {
+        return unrouted.size();
+    }
+
+    public ArrayList<Request> GetUnroutedRequests() {
+        ArrayList<Request> unroutedRequests = new ArrayList<>();
+        for(int i=0;i<this.unrouted.size();i++){
+            unroutedRequests.add(this.unrouted.get(i));
+        }
+        return unroutedRequests;
+    }
+
+    public void RemoveFromUnrouted(Request request) {
+        for(int i=0;i<this.unrouted.size();i++){
+            if(this.unrouted.get(i).id==request.id){
+                this.unrouted.remove(i);
+                break;
             }
         }
-        return availableRoutes;
     }
 
-    public int GetRequestAmount(){
-        int requestAmount=0;
-        for(int i =0;i<this.routes.size();i++){
-            for(int j=0;j<this.routes.get(i).stops.size();j++){
-                if(this.routes.get(i).stops.get(j).isRequest){
-                    requestAmount++;
+    public void UpdateRoute(Route newRoute) {
+        for(int i=0;i<this.routes.size();i++){
+            if(this.routes.get(i).id== newRoute.id){
+                this.routes.set(i,new Route(newRoute));
+                break;
+            }
+        }
+    }
+
+    public ArrayList<Request> GetRequests() {
+        ArrayList<Request> requests = new ArrayList<>();
+        boolean alreadyIn;
+        for(int i=0;i<this.routes.size();i++){
+            for(int j=0;j<this.routes.get(i).tripNodes.size();j++){
+                for(int k=0;k<this.routes.get(i).tripNodes.get(j).deliveries.size();k++){
+                    alreadyIn=false;
+                    for(int l=0;l< requests.size();l++){
+                        if(requests.get(l).id==this.routes.get(i).tripNodes.get(j).deliveries.get(k).requestId){
+                            alreadyIn=true;
+                            requests.get(l).uncoveredLoad+=this.routes.get(i).tripNodes.get(j).deliveries.get(k).load;
+                        }
+                    }
+                    if(!alreadyIn){
+                        requests.add(new Request(this.routes.get(i).tripNodes.get(j).deliveries.get(k).requestId,
+                                this.routes.get(i).tripNodes.get(j).x,this.routes.get(i).tripNodes.get(j).y,
+                                this.routes.get(i).tripNodes.get(j).deliveries.get(k).load,
+                                this.routes.get(i).tripNodes.get(j).deliveries.get(k).startTime,
+                                this.routes.get(i).tripNodes.get(j).deliveries.get(k).timeWindow,
+                                this.routes.get(i).tripNodes.get(j).deliveries.get(k).clientId));
+                    }
                 }
             }
         }
-        return requestAmount;
-    }
-    public Solution(Environment environment) {
-        this.routes = new ArrayList<>();
-        this.unrouted = new ArrayList<>();
-        Route route;
-        for(int i=0;i<environment.vehicles.size();i++){
-            route = new Route();
-            route.nodes.add(environment.GetDepot());
-            route.nodes.add(environment.GetDepot());
-            route.stops.add(environment.GetDepot());
-            route.stops.add(environment.GetDepot());
-            route.vehicle=environment.vehicles.get(i);
-            this.routes.add(route);
-        }
+        return requests;
     }
 
-    public ArrayList<Request> GetOrderedUnrouted(){
+    public Route GetRoute(int id) {
+        Route route=null;
+        for(int i=0;i<this.routes.size();i++){
+            if(this.routes.get(i).id==id){
+                route=this.routes.get(i);
+                break;
+            }
+        }
+        return route;
+    }
+
+    public ArrayList<Request> GetOrderedUnroutedRequests() {
         //make a simple copy
         ArrayList<Request> unrouted = new ArrayList<>();
         for(int i=0;i<this.unrouted.size();i++){
@@ -70,26 +120,36 @@ public class Solution {
         unrouted.sort(new RequestComparator());
         return unrouted;
     }
-    public float CalculateScore(Environment environment, LocalDateTime currentTime){
-        float costAvg=0;
-        int number=0;
+
+    public void RemoveRequest(int id, Environment environment) {
+        boolean alreadyIn;
+        LNS lns = new LNS();
         for(int i=0;i<this.routes.size();i++){
-            if(this.routes.get(i).GetRequestAmount()>0){
-                costAvg+=this.routes.get(i).EvaluateRoute(environment,currentTime);
-                number++;
+            for(int j=0;j<this.routes.get(i).tripNodes.size();j++){
+                for(int k=0;k<this.routes.get(i).tripNodes.get(j).deliveries.size();k++){
+                    if(this.routes.get(i).tripNodes.get(j).deliveries.get(k).requestId==id){
+                        alreadyIn=false;
+                        for(int l=0;l<this.unrouted.size();l++){
+                            if(this.unrouted.get(l).id==id){
+                                this.unrouted.get(l).uncoveredLoad+=this.routes.get(i).tripNodes.get(j).deliveries.get(k).load;
+                                alreadyIn=true;
+                            }
+                        }
+                        if(!alreadyIn){
+                            this.unrouted.add(new Request(id,this.routes.get(i).tripNodes.get(j).x,
+                                    this.routes.get(i).tripNodes.get(j).y,
+                                    this.routes.get(i).tripNodes.get(j).deliveries.get(k).load,
+                                    this.routes.get(i).tripNodes.get(j).deliveries.get(k).startTime,
+                                    this.routes.get(i).tripNodes.get(j).deliveries.get(k).timeWindow,
+                                    this.routes.get(i).tripNodes.get(j).deliveries.get(k).clientId));
+                        }
+                        this.routes.get(i).tripNodes.get(j).deliveries.remove(k);
+                        if(this.routes.get(i).tripNodes.get(j).deliveries.size()==0){
+                            this.routes.set(i,lns.CalculateRouteFromStops(this.routes.get(i).GetStops(),this.routes.get(i).id,this.routes.get(i).vehicle,environment));
+                        }
+                    }
+                }
             }
         }
-
-        return costAvg/number;
-    }
-
-    public boolean IsActive(){
-        boolean isActive = false;
-        for(int i=0;i<this.routes.size();i++){
-            if(this.routes.get(i).startTime!=null){
-                isActive = true;
-            }
-        }
-        return isActive;
     }
 }

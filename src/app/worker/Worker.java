@@ -13,312 +13,124 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Worker {
+
     public void Simulate(){
-        LocalDateTime currentTime = LocalDateTime.of(2023, Month.APRIL, 1, 0, 0);
-        LocalDateTime comp = LocalDateTime.of(2023, Month.APRIL, 1, 5, 8);
-        Environment environment;//25 4
-        environment = new Environment(70, 50, 45, 30, 20, 25, 30, 5, 40, 4, 60, 3);
-        //environment.SetBlockage(44,30);
         LNS lns = new LNS();
-        ArrayList<Request> requests = new ArrayList<>();
-        try {
-            requests = this.ImportRequests();
-        } catch(Exception ex) {
-            System.out.println("Error with file importing");
-            System.exit(0);
-        }
-        ArrayList<Blockage> blockages = new ArrayList<>();
+        ArrayList<ExpNum> expNums = new ArrayList<>();
+        ExpNum expNum;
+        boolean expNumAlreadyExists;
+        boolean simulationIsOver=false;
+        boolean activeRoutes;
+        boolean solvingNeeded;
+        ArrayList<Request> requests = null;
+        int reqAmount;
+        LocalDateTime currentTime = LocalDateTime.of(2023, Month.APRIL, 1, 0, 0);
+        int dayCounter=0;
+        ArrayList<Blockage> blockages = null;
         try {
             blockages = this.ImportBlockages();
         } catch(Exception ex) {
             System.out.println("Error with file importing");
             System.exit(0);
         }
-        /*
-        Request request = new Request(0,35,41,3,24*60, LocalDateTime.of(2023, Month.APRIL, 12, 10, 31));
-        environment.GetNode(35,41).isRequest=true;
-        requests.add(request);
-        request = new Request(1,10,35,7,8*60,LocalDateTime.of(2023, Month.APRIL, 12, 10, 33));
-        environment.GetNode(10,35).isRequest=true;
-        requests.add(request);*/
-
-        Input input = new Input(environment,currentTime,null);
-        Output output;
-
-        boolean started =false;
-        boolean blockageWasAdded = false;
-        float expNum = 0;
-        long timeElapsedInRoute;
-        int expNumAmount =0;
-        int reqAmount;
-        int x;
-        int y;
-        boolean isRequest;
-        boolean changes = false;
-        boolean collapse = false;
-        boolean newRoutesAvailable;
-        LocalDateTime endTime;
-        //bike moves one node every minute
-        //car moves one node every two minutes
+        boolean systemCollapse = false;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        //run the simulation
-        while(true){
-            changes=false;
-            newRoutesAvailable=false;
-            System.out.println("Current time: " + currentTime.format(formatter));
-            input.currentTime = currentTime;
-
-            //checking collapse
-            for(int i=0;i<input.environment.requests.size();i++){
-                endTime = input.environment.requests.get(i).startTime.plusHours(input.environment.requests.get(i).timeWindow);
-                if(currentTime.isAfter(endTime)){
-                    collapse=true;
-                    System.out.println("System collapse");
-                    break;
+        Environment environment = new Environment(70,50,45,30,blockages,currentTime);
+        Solution solution = new Solution(20, 25, 30, 5, 40, 4, 60, 3,environment);
+        while(!simulationIsOver){
+            System.out.println("Current time: " + environment.currentTime.format(formatter));
+            solvingNeeded=false;
+            activeRoutes=false;
+            if(environment.currentTime.getHour()==0 && environment.currentTime.getMinute()==0 && dayCounter<30){
+                try {
+                    requests = this.ImportRequests(environment.currentTime);
+                } catch(Exception ex) {
+                    System.out.println("Error with file importing");
+                    System.exit(0);
                 }
+                dayCounter++;
             }
-            if(collapse)break;
-
-            //if solution was constructed at least once
-            if(started){
-                blockageWasAdded = false;
-
-                //for each blockage
-                for(int i=0;i< blockages.size();i++){
-
-                    //if blockage needs to be active
-                    if(blockages.get(i).startTime.equals(currentTime)){
-
-                        //insert blockage into environment
-                        input.environment.SetBlockage(blockages.get(i).x,blockages.get(i).y);
-                        blockageWasAdded = true;
-                    }
-
-                    //if blockage needs to be removed
-                    if(blockages.get(i).endTime.equals(currentTime)){
-
-                        //remove from environment
-                        input.environment.GetNode(blockages.get(i).x,blockages.get(i).y).isBlocked = false;
-                    }
-                }
-
-                //if any blockage was added, recalculate
-                if(blockageWasAdded) {
-                    lns.Destroy(input.previousSolution, input.environment, 1, true);
-                    output = lns.Solve(input);
-                    changes = true;
-                    input.previousSolution = output.solution;
-                    input.environment = output.environment;
-                }
-            }
-
             //if there are requests to attend
             if(requests.size()!=0) {
 
                 //if the request needs to be attended now
-                if (requests.get(0).startTime.equals(currentTime)) {
+                if (requests.get(0).startTime.equals(environment.currentTime)) {
 
                     reqAmount = requests.size();
                     //add all the requests that need to be inserted into the solution
-                    for(int i=0;i< reqAmount;i++){
-                        if(requests.get(0).startTime.equals(currentTime)){
-
-                            //add to the total of requests
-                            input.environment.requests.add(requests.get(0));
-
-                            //add to the existing unrouted list
-                            if (input.previousSolution != null) {
-                                input.previousSolution.unrouted.add(requests.get(0));
-                            }
-
-                            //set node as request
-                            input.environment.GetNode(requests.get(0).x,requests.get(0).y).isRequest=true;
-
-                            //remove from list of requests to attend
+                    for (int i = 0; i < reqAmount; i++) {
+                        if(requests.get(0).startTime.equals(environment.currentTime)){
+                            solution.unrouted.add(requests.get(0));
                             requests.remove(0);
-                        }
-                        //if the requests doesn't need to be attended rn then break
-                        else{
+                        }else{
                             break;
                         }
                     }
-
-                    //calculate new solution for the new set of requests
-                    output = lns.Solve(input);
-                    changes=true;
-
-                    //update input with the values obtained
-                    input.previousSolution = output.solution;
-                    input.environment = output.environment;
-
-
-                    //assign current time as starting time for the newly created routes
-                    for (int i = 0; i < input.previousSolution.routes.size(); i++) {
-                        if (input.previousSolution.routes.get(i).startTime == null && input.previousSolution.routes.get(i).GetRequestAmount() > 0) {
-                            input.previousSolution.routes.get(i).startTime = currentTime;
-                            newRoutesAvailable = true;
-                        }
-                    }
-                    started = true;
+                    solvingNeeded=true;
                 }
             }
-
-
-
-            if(started){
-
-                //if changes were made, routes may need to be deactivated
-                for(int i=0;i<input.previousSolution.routes.size();i++){
-                    if(input.previousSolution.routes.get(i).stops.size()==2 && input.previousSolution.routes.get(i).stops.get(0).isDepot){
-                        input.previousSolution.routes.get(i).startTime=null;
+            if(solution.started){
+                for(int i=0;i<solution.unrouted.size();i++){
+                    if(environment.currentTime.isAfter(solution.unrouted.get(i).startTime.plusHours(solution.unrouted.get(i).timeWindow))){
+                        systemCollapse=true;
+                        break;
                     }
                 }
-
-                //for each route
-                for(int i=0;i<input.previousSolution.routes.size();i++){
-
-                    //if the route is active
-                    if(input.previousSolution.routes.get(i).startTime!=null && input.previousSolution.routes.get(i).nodes.size()!=0){
-                        timeElapsedInRoute =ChronoUnit.MINUTES.between(input.previousSolution.routes.get(i).startTime,currentTime);
-
-                        //if it's their turn to move
-                        if(timeElapsedInRoute>0 && timeElapsedInRoute%(60/input.previousSolution.routes.get(i).vehicle.speed)==0){
-
-                            //move one node
-                            x = input.previousSolution.routes.get(i).nodes.get(0).x;
-                            y = input.previousSolution.routes.get(i).nodes.get(0).y;
-                            input.previousSolution.routes.get(i).nodes.remove(0);
-
-                            //if the node was a stop, remove from stops also
-                            if(x==input.previousSolution.routes.get(i).stops.get(0).x && y==input.previousSolution.routes.get(i).stops.get(0).y){
-                                isRequest = input.previousSolution.routes.get(i).stops.get(0).isRequest;
-                                input.previousSolution.routes.get(i).stops.remove(0);
-
-                                //if the stop was a request
-                                if(isRequest){
-
-                                    //reduce trip count from request
-                                    input.environment.GetRequest(x,y).tripsLeft--;
-
-                                    //reduce load from vehicle
-                                    input.previousSolution.routes.get(i).vehicle.load-=input.previousSolution.routes.get(i).vehicle.GetRequestLoad(x,y);
-
-                                    //remove request load from vehicle
-                                    input.previousSolution.routes.get(i).vehicle.RemoveRequestLoad(x,y);
-
-                                    //if all trips were covered
-                                    if(input.environment.GetRequest(x,y).tripsLeft==0){
-
-                                        //update expNum
-                                        expNum+=(float)(ChronoUnit.MINUTES.between(currentTime,input.environment.GetRequest(x,y).startTime.plusHours(input.environment.GetRequest(x,y).timeWindow)));
-                                        expNumAmount++;
-
-                                        //update environment node to no longer be a request
-                                        input.environment.GetNode(x,y).isRequest=false;
-
-                                        //remove request from environment
-                                        input.environment.RemoveRequest(x,y);
+                if(systemCollapse){
+                    break;
+                }
+                for(int i=0;i<solution.routes.size();i++){
+                    if(solution.routes.get(i).tripNodes.get(0).visitTime!=null) {
+                        if (environment.currentTime.isAfter(solution.routes.get(i).tripNodes.get(0).visitTime)) {
+                            for(int j=0;j<solution.routes.get(i).tripNodes.get(0).deliveries.size();j++){
+                                solution.routes.get(i).vehicle.load-=solution.routes.get(i).tripNodes.get(0).deliveries.get(j).load;
+                                expNumAlreadyExists=false;
+                                for(int k=0;k<expNums.size();k++){
+                                    if(expNums.get(k).requestId==solution.routes.get(i).tripNodes.get(0).deliveries.get(j).requestId){
+                                        expNums.get(k).value= ChronoUnit.MINUTES.between(solution.routes.get(i).tripNodes.get(0).visitTime,
+                                                solution.routes.get(i).tripNodes.get(0).deliveries.get(j).startTime.
+                                                        plusHours(solution.routes.get(i).tripNodes.get(0).deliveries.get(j).timeWindow));
+                                        expNumAlreadyExists=true;
                                     }
                                 }
+                                if(!expNumAlreadyExists){
+                                    expNum = new ExpNum(solution.routes.get(i).tripNodes.get(0).deliveries.get(j).requestId,ChronoUnit.MINUTES.between(solution.routes.get(i).tripNodes.get(0).visitTime,
+                                            solution.routes.get(i).tripNodes.get(0).deliveries.get(j).startTime.
+                                                    plusHours(solution.routes.get(i).tripNodes.get(0).deliveries.get(j).timeWindow)));
+                                    expNums.add(expNum);
+                                }
                             }
-
-                            //if the route is over, initialize it
-                            if(input.previousSolution.routes.get(i).nodes.size()==1){
-                                input.previousSolution.routes.get(i).startTime=null;
-                                input.previousSolution.routes.get(i).nodes.add(input.environment.GetDepot());
-                                input.previousSolution.routes.get(i).stops.add(input.environment.GetDepot());
-                                input.previousSolution.routes.get(i).vehicle.load=0;
-                                newRoutesAvailable = true;
-                            } /*else if (input.previousSolution.routes.get(i).GetRequests(input.environment).size()==0 && input.previousSolution.routes.get(i).stops.get(0).isDepot) {
-                                    input.previousSolution.routes.get(i).startTime=null;
-                                }*/
+                            solution.routes.get(i).tripNodes.remove(0);
+                            if(solution.routes.get(i).tripNodes.size()==0){
+                                solution.routes.get(i).tripNodes.add(new TripNode(0, environment.depotX, environment.depotY, true,null));
+                                solution.routes.get(i).tripNodes.add(new TripNode(1, environment.depotX, environment.depotY, true,null));
+                                if(solution.unrouted.size()>0){
+                                    solvingNeeded=true;
+                                }
+                            }
                         }
                     }
                 }
             }
-            //if all requests were attended and the routes aren't active, finish simulation
-            if(requests.size()==0 && !input.previousSolution.IsActive()){
-                break;
+            if(solvingNeeded){
+                solution = lns.Solve(solution,environment);
             }
-
-            if(newRoutesAvailable){
-                output = lns.Solve(input);
-
-                //update input with the values obtained
-                input.previousSolution = output.solution;
-                input.environment = output.environment;
-            }
-
-            if(started){
-                for(int i=0;i<input.previousSolution.routes.size();i++){
-                    if(input.previousSolution.routes.get(i).startTime!=null){
-                        System.out.print("Stops: ");
-                        for(int j=0;j<input.previousSolution.routes.get(i).stops.size();j++){
-                            System.out.print("("+input.previousSolution.routes.get(i).stops.get(j).x+","+input.previousSolution.routes.get(i).stops.get(j).y+") ");
-                        }
-                        System.out.println("");
-                        if(input.previousSolution.routes.get(i).nodes.size()==0){
-                            System.out.println(input.previousSolution.routes.get(i).vehicle.id+" error");
-                        }
-                        else {
-                            System.out.println(input.previousSolution.routes.get(i).vehicle.id+" current position: (" + input.previousSolution.routes.get(i).nodes.get(0).x + "," + input.previousSolution.routes.get(i).nodes.get(0).y + ") ");
-                        }
-                        System.out.println("______________________________________________________");
-                        /*for(int j=0;j<input.previousSolution.routes.get(i).nodes.size();j++){
-                            System.out.print("("+input.previousSolution.routes.get(i).nodes.get(j).x+","+input.previousSolution.routes.get(i).nodes.get(j).y+") ");
-                        }
-                        System.out.println("");*/
-                    }
+            for(int i=0;i<solution.routes.size();i++){
+                if(solution.routes.get(i).tripNodes.get(0).visitTime!=null){
+                    activeRoutes=true;
                 }
-                System.out.println("========================================================");
             }
-
-            //add a minute to current time
-            currentTime = currentTime.plusMinutes(1);
-            comp = LocalDateTime.of(2023, Month.APRIL, 1, 0, 50);
-            if(currentTime.equals(comp)){
-                System.out.print("");
+            if(!activeRoutes && requests.size()==0){
+                simulationIsOver=true;
             }
+            environment.currentTime=environment.currentTime.plusMinutes(1);
         }
-        if(expNumAmount==0){
-            expNum=0;
+        float finalExpNum=0;
+        for(int i=0;i< expNums.size();i++){
+            finalExpNum+=expNums.get(i).value;
         }
-        else {
-            expNum = expNum / expNumAmount;
-        }
-        System.out.println("ExpNum: " + expNum);
+        System.out.println("ExpNum: " + finalExpNum/expNums.size());
     }
-
-    public ArrayList<Request> ImportRequests() throws FileNotFoundException {
-        File inputDirectory;
-        ArrayList<Request> requests = new ArrayList<>();
-        inputDirectory = new File(System.getProperty("user.dir") + "/input/packages");
-        String[] inputFiles = inputDirectory.list((dir, name) -> new File(dir, name).isFile());
-        for (int i = 0; i < inputFiles.length; i++) {
-            File file = new File(inputDirectory + "/" + inputFiles[i]);
-            Scanner scan = new Scanner(file);
-            while (scan.hasNextLine()) {
-                String orderStr = scan.nextLine();
-                String[] order = orderStr.split(",");
-                String readyTime = order[0];
-                String[] dateSections = readyTime.split(":");
-                LocalDateTime startTime = LocalDateTime.of(2023, Month.APRIL, 1, 0, 0).plusHours(Integer.parseInt(dateSections[0])).plusMinutes(Integer.parseInt(dateSections[1]));
-                int x = Integer.parseInt(order[1]);
-                int y = Integer.parseInt(order[2]);
-                int load = Integer.parseInt(order[3]);
-                int idCustomer = Integer.parseInt(order[4]);
-                int timeWindow = Integer.parseInt(order[5]);
-                //environment.GetNode(x,y).isRequest=true;
-
-                Request request = new Request(x,y,load,timeWindow,startTime,idCustomer);
-                requests.add(request);
-            }
-            scan.close();
-        }
-        return requests;
-    }
-
     public ArrayList<Blockage> ImportBlockages() throws FileNotFoundException {
         File inputDirectory;
         ArrayList<Blockage> blockages = new ArrayList<>();
@@ -349,5 +161,36 @@ public class Worker {
             scan.close();
         }
         return blockages;
+    }
+
+    public ArrayList<Request> ImportRequests(LocalDateTime currentTime) throws FileNotFoundException {
+        File inputDirectory;
+        int id;
+        ArrayList<Request> requests = new ArrayList<>();
+        inputDirectory = new File(System.getProperty("user.dir") + "/input/packages");
+        String[] inputFiles = inputDirectory.list((dir, name) -> new File(dir, name).isFile());
+        for (int i = 0; i < inputFiles.length; i++) {
+            File file = new File(inputDirectory + "/" + inputFiles[i]);
+            Scanner scan = new Scanner(file);
+            id =0;
+            while (scan.hasNextLine()) {
+                String orderStr = scan.nextLine();
+                String[] order = orderStr.split(",");
+                String readyTime = order[0];
+                String[] dateSections = readyTime.split(":");
+                LocalDateTime startTime = currentTime.plusHours(Integer.parseInt(dateSections[0])).plusMinutes(Integer.parseInt(dateSections[1]));
+                int x = Integer.parseInt(order[1]);
+                int y = Integer.parseInt(order[2]);
+                int load = Integer.parseInt(order[3]);
+                int idCustomer = Integer.parseInt(order[4]);
+                int timeWindow = Integer.parseInt(order[5]);
+
+                Request request = new Request(id,x,y,load,startTime,timeWindow,idCustomer);
+                requests.add(request);
+                id++;
+            }
+            scan.close();
+        }
+        return requests;
     }
 }
